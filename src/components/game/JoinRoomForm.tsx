@@ -8,33 +8,41 @@ import { toast } from "sonner";
 
 const JoinRoomForm: React.FC = () => {
   const navigate = useNavigate();
-  const { joinRoom, gameState } = useGameContext();
+  const { joinRoom } = useGameContext();
   
   const [roomCode, setRoomCode] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [error, setError] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     
     if (!roomCode) {
       setError("Please enter a room code");
+      toast.error("Please enter a room code");
       return;
     }
     
     if (!playerName) {
       setError("Please enter your name");
+      toast.error("Please enter your name");
       return;
     }
     
     setIsJoining(true);
     
     try {
+      // Join the room
       joinRoom(roomCode, playerName);
-      toast.success(`Joining room ${roomCode}`);
-      navigate("/game");
+      
+      // Add a short delay to allow the context state to update
+      setTimeout(() => {
+        toast.success(`Joining room ${roomCode}`);
+        navigate("/game");
+        setIsJoining(false);
+      }, 500);
     } catch (error) {
       console.error("Error joining room:", error);
       setError("Failed to join room. Please check the room code and try again.");

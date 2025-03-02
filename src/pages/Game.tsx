@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -29,10 +28,15 @@ const Game: React.FC = () => {
   
   // Redirect if no room settings (means we're not in a valid game)
   useEffect(() => {
-    if (!roomSettings && gameState === "idle") {
-      toast.error("No active game session. Please create or join a game.");
-      navigate("/");
-    }
+    // Small delay to let context hydrate
+    const checkGameState = setTimeout(() => {
+      if (!roomSettings && (gameState === "idle" || gameState === "ended")) {
+        toast.error("No active game session. Please create or join a game.");
+        navigate("/");
+      }
+    }, 500);
+    
+    return () => clearTimeout(checkGameState);
   }, [roomSettings, gameState, navigate]);
 
   // Set up timer cleanup
@@ -113,6 +117,23 @@ const Game: React.FC = () => {
   };
   
   const timeRemaining = getTimeRemaining();
+  
+  // Add debug information to help diagnose issues
+  console.log("Game component state:", { gameState, roomSettings, players, tickets });
+  
+  // Show loading state while context initializes
+  if (gameState === "creating" || gameState === "joining") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-medium text-gray-700">
+            {gameState === "creating" ? "Creating your game room..." : "Joining the game room..."}
+          </h2>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen bg-gray-50">
