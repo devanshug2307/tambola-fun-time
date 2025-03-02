@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { toast } from "sonner";
 
 type GameState = "idle" | "creating" | "joining" | "waiting" | "playing" | "ended";
 
@@ -28,7 +29,7 @@ interface GameContextType {
   gameState: GameState;
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
   roomSettings: RoomSettings | null;
-  createRoom: (settings: Partial<RoomSettings>) => void;
+  createRoom: (settings: Partial<RoomSettings>) => string;
   joinRoom: (roomCode: string, playerName: string) => void;
   players: Player[];
   currentPlayer: Player | null;
@@ -46,7 +47,7 @@ const defaultContext: GameContextType = {
   gameState: "idle",
   setGameState: () => {},
   roomSettings: null,
-  createRoom: () => {},
+  createRoom: () => "",
   joinRoom: () => {},
   players: [],
   currentPlayer: null,
@@ -73,6 +74,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [lastCalledNumber, setLastCalledNumber] = useState<number | null>(null);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [winners, setWinners] = useState<{ pattern: string; player: Player }[]>([]);
+
+  // Cleanup function to reset game state when navigating away
+  useEffect(() => {
+    return () => {
+      if (gameState !== "idle") {
+        console.log("Cleaning up game context");
+      }
+    };
+  }, []);
 
   // Function to generate a random 6-character room code
   const generateRoomCode = () => {
@@ -135,36 +145,66 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Create a new room with settings
-  const createRoom = (settings: Partial<RoomSettings>) => {
-    const newRoomCode = generateRoomCode();
-    
-    const newSettings: RoomSettings = {
-      roomCode: newRoomCode,
-      maxPlayers: settings.maxPlayers || 10,
-      ticketPrice: settings.ticketPrice || 0,
-      numberCallSpeed: settings.numberCallSpeed || 10,
-      winningPatterns: settings.winningPatterns || ['Early Five', 'Top Line', 'Middle Line', 'Bottom Line', 'Full House'],
-      autoMarkEnabled: settings.autoMarkEnabled ?? false,
-    };
-    
-    setRoomSettings(newSettings);
-    setGameState("creating");
-    
-    // For demo purposes, simulate creating a room and moving to waiting state
-    setTimeout(() => {
-      setGameState("waiting");
-    }, 1000);
-
-    return newRoomCode;
+  const createRoom = (settings: Partial<RoomSettings>): string => {
+    try {
+      setGameState("creating");
+      const newRoomCode = generateRoomCode();
+      
+      const newSettings: RoomSettings = {
+        roomCode: newRoomCode,
+        maxPlayers: settings.maxPlayers || 10,
+        ticketPrice: settings.ticketPrice || 0,
+        numberCallSpeed: settings.numberCallSpeed || 10,
+        winningPatterns: settings.winningPatterns || ['Early Five', 'Top Line', 'Middle Line', 'Bottom Line', 'Full House'],
+        autoMarkEnabled: settings.autoMarkEnabled ?? false,
+      };
+      
+      setRoomSettings(newSettings);
+      
+      // Create a host player
+      const hostPlayer: Player = {
+        id: `host-${Date.now()}`,
+        name: "Host",
+        isReady: true,
+      };
+      
+      setCurrentPlayer(hostPlayer);
+      setPlayers([hostPlayer]);
+      
+      // Generate a ticket for the host
+      const hostTicket: Ticket = {
+        id: `ticket-${Date.now()}`,
+        numbers: generateTicket() as any,
+        markedNumbers: [],
+      };
+      
+      setTickets([hostTicket]);
+      
+      // Simulate network delay for creating a room
+      setTimeout(() => {
+        setGameState("waiting");
+        console.log("Room created:", newRoomCode);
+        toast.success(`Room created: ${newRoomCode}`);
+      }, 1000);
+      
+      return newRoomCode;
+    } catch (error) {
+      console.error("Error creating room:", error);
+      toast.error("Failed to create room. Please try again.");
+      setGameState("idle");
+      throw error;
+    }
   };
 
   // Join an existing room
   const joinRoom = (roomCode: string, playerName: string) => {
-    setGameState("joining");
-    
-    // Simulate checking if room exists
-    setTimeout(() => {
-      // For demo purposes, create a fake room settings
+    try {
+      setGameState("joining");
+      
+      // In a real app, we would validate the room code here
+      // For now, we'll just simulate joining a room
+      
+      // Create demo room settings based on the provided code
       const demoRoomSettings: RoomSettings = {
         roomCode: roomCode,
         maxPlayers: 10,
@@ -203,8 +243,18 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setTickets([newTicket]);
       
-      setGameState("waiting");
-    }, 1000);
+      // Simulate network delay for joining a room
+      setTimeout(() => {
+        setGameState("waiting");
+        console.log("Joined room:", roomCode);
+        toast.success(`Joined room: ${roomCode}`);
+      }, 1000);
+    } catch (error) {
+      console.error("Error joining room:", error);
+      toast.error("Failed to join room. Please check the room code and try again.");
+      setGameState("idle");
+      throw error;
+    }
   };
 
   // Call a random number
@@ -220,6 +270,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (availableNumbers.length === 0) {
       // Game is over - all numbers have been called
       setGameState("ended");
+      toast.info("Game over! All numbers have been called.");
       return;
     }
     
@@ -268,7 +319,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // In a real app, we would validate the claim here
     // For demo purposes, just add to winners list
     
-    setWinners(prev => [...prev, { pattern, player: currentPlayer }]);
+    const existingClaim = winners.find(
+      w => w.pattern === pattern && w.player.id === currentPlayer.id
+    );
+    
+    if (!existingClaim) {
+      setWinners(prev => [...prev, { pattern, player: currentPlayer }]);
+      toast.success(`Congratulations! You claimed the ${pattern} pattern.`);
+    } else {
+      toast.error("You've already claimed this pattern!");
+    }
   };
 
   // Leave the current room
@@ -281,6 +341,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLastCalledNumber(null);
     setTickets([]);
     setWinners([]);
+    toast.info("You left the game room.");
   };
 
   return (

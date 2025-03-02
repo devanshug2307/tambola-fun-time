@@ -4,10 +4,12 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ButtonCustom } from "@/components/ui/button-custom";
 import { useGameContext } from "@/context/GameContext";
+import { toast } from "sonner";
 
 const CreateRoomForm: React.FC = () => {
   const navigate = useNavigate();
-  const { createRoom } = useGameContext();
+  const { createRoom, gameState } = useGameContext();
+  const [isCreating, setIsCreating] = useState(false);
   
   const [formData, setFormData] = useState({
     maxPlayers: 10,
@@ -51,6 +53,15 @@ const CreateRoomForm: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Make sure at least one winning pattern is selected
+    const hasSelectedPattern = Object.values(formData.winningPatterns).some(isSelected => isSelected);
+    if (!hasSelectedPattern) {
+      toast.error("Please select at least one winning pattern");
+      return;
+    }
+    
+    setIsCreating(true);
+    
     const selectedPatterns = Object.entries(formData.winningPatterns)
       .filter(([_, isSelected]) => isSelected)
       .map(([pattern, _]) => {
@@ -65,15 +76,22 @@ const CreateRoomForm: React.FC = () => {
       })
       .filter(p => p !== "");
     
-    const roomCode = createRoom({
-      maxPlayers: formData.maxPlayers,
-      ticketPrice: formData.ticketPrice,
-      numberCallSpeed: formData.numberCallSpeed,
-      autoMarkEnabled: formData.autoMarkEnabled,
-      winningPatterns: selectedPatterns,
-    });
-    
-    navigate("/game");
+    try {
+      const roomCode = createRoom({
+        maxPlayers: formData.maxPlayers,
+        ticketPrice: formData.ticketPrice,
+        numberCallSpeed: formData.numberCallSpeed,
+        autoMarkEnabled: formData.autoMarkEnabled,
+        winningPatterns: selectedPatterns,
+      });
+      
+      toast.success(`Room created! Room code: ${roomCode}`);
+      navigate("/game");
+    } catch (error) {
+      console.error("Error creating room:", error);
+      toast.error("Failed to create room. Please try again.");
+      setIsCreating(false);
+    }
   };
   
   return (
@@ -192,14 +210,16 @@ const CreateRoomForm: React.FC = () => {
             type="button"
             variant="outline"
             onClick={() => navigate("/")}
+            disabled={isCreating}
           >
             Cancel
           </ButtonCustom>
           <ButtonCustom
             type="submit"
             variant="primary"
+            disabled={isCreating}
           >
-            Create Room
+            {isCreating ? "Creating Room..." : "Create Room"}
           </ButtonCustom>
         </div>
       </form>

@@ -4,17 +4,20 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ButtonCustom } from "@/components/ui/button-custom";
 import { useGameContext } from "@/context/GameContext";
+import { toast } from "sonner";
 
 const JoinRoomForm: React.FC = () => {
   const navigate = useNavigate();
-  const { joinRoom } = useGameContext();
+  const { joinRoom, gameState } = useGameContext();
   
   const [roomCode, setRoomCode] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [error, setError] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     
     if (!roomCode) {
       setError("Please enter a room code");
@@ -26,9 +29,18 @@ const JoinRoomForm: React.FC = () => {
       return;
     }
     
-    // For demo, we're not validating if the room exists
-    joinRoom(roomCode, playerName);
-    navigate("/game");
+    setIsJoining(true);
+    
+    try {
+      joinRoom(roomCode, playerName);
+      toast.success(`Joining room ${roomCode}`);
+      navigate("/game");
+    } catch (error) {
+      console.error("Error joining room:", error);
+      setError("Failed to join room. Please check the room code and try again.");
+      toast.error("Failed to join room. Please check the room code and try again.");
+      setIsJoining(false);
+    }
   };
   
   return (
@@ -59,10 +71,14 @@ const JoinRoomForm: React.FC = () => {
               type="text"
               id="roomCode"
               value={roomCode}
-              onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+              onChange={(e) => {
+                setRoomCode(e.target.value.toUpperCase());
+                setError("");
+              }}
               placeholder="Enter 6-digit code"
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-tambola-blue focus:border-tambola-blue uppercase"
               maxLength={6}
+              disabled={isJoining}
             />
           </div>
           
@@ -74,9 +90,13 @@ const JoinRoomForm: React.FC = () => {
               type="text"
               id="playerName"
               value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
+              onChange={(e) => {
+                setPlayerName(e.target.value);
+                setError("");
+              }}
               placeholder="Enter your name"
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-tambola-blue focus:border-tambola-blue"
+              disabled={isJoining}
             />
           </div>
         </div>
@@ -86,14 +106,16 @@ const JoinRoomForm: React.FC = () => {
             type="button"
             variant="outline"
             onClick={() => navigate("/")}
+            disabled={isJoining}
           >
             Cancel
           </ButtonCustom>
           <ButtonCustom
             type="submit"
             variant="primary"
+            disabled={isJoining}
           >
-            Join Room
+            {isJoining ? "Joining Room..." : "Join Room"}
           </ButtonCustom>
         </div>
       </form>
