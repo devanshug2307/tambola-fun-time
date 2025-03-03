@@ -572,6 +572,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLastCalledNumber(newNumber);
       setCalledNumbers(prev => [...prev, newNumber]);
       
+      // Mark the number on all tickets
+      tickets.forEach(ticket => {
+        markNumber(ticket.id, newNumber);
+      });
+      
       toast.success(`Number called: ${newNumber}`);
     } catch (error) {
       console.error("Error calling number:", error);

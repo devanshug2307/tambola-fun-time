@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -10,7 +9,7 @@ const CreateRoomForm: React.FC = () => {
   const navigate = useNavigate();
   const { createRoom } = useGameContext();
   const [isCreating, setIsCreating] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     maxPlayers: 10,
     ticketPrice: 5,
@@ -24,24 +23,27 @@ const CreateRoomForm: React.FC = () => {
       fullHouse: true,
     },
   });
-  
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value, type } = e.target as HTMLInputElement;
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" 
-        ? (e.target as HTMLInputElement).checked 
-        : type === "number" 
-          ? parseInt(value) 
+      [name]:
+        type === "checkbox"
+          ? (e.target as HTMLInputElement).checked
+          : type === "number"
+          ? parseInt(value)
           : value,
     }));
   };
-  
+
   const handlePatternChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
       winningPatterns: {
         ...prev.winningPatterns,
@@ -49,33 +51,41 @@ const CreateRoomForm: React.FC = () => {
       },
     }));
   };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Make sure at least one winning pattern is selected
-    const hasSelectedPattern = Object.values(formData.winningPatterns).some(isSelected => isSelected);
+    const hasSelectedPattern = Object.values(formData.winningPatterns).some(
+      (isSelected) => isSelected
+    );
     if (!hasSelectedPattern) {
       toast.error("Please select at least one winning pattern");
       return;
     }
-    
+
     setIsCreating(true);
-    
+
     const selectedPatterns = Object.entries(formData.winningPatterns)
       .filter(([_, isSelected]) => isSelected)
       .map(([pattern, _]) => {
-        switch(pattern) {
-          case "earlyFive": return "Early Five";
-          case "topLine": return "Top Line";
-          case "middleLine": return "Middle Line";
-          case "bottomLine": return "Bottom Line";
-          case "fullHouse": return "Full House";
-          default: return "";
+        switch (pattern) {
+          case "earlyFive":
+            return "Early Five";
+          case "topLine":
+            return "Top Line";
+          case "middleLine":
+            return "Middle Line";
+          case "bottomLine":
+            return "Bottom Line";
+          case "fullHouse":
+            return "Full House";
+          default:
+            return "";
         }
       })
-      .filter(p => p !== "");
-    
+      .filter((p) => p !== "");
+
     try {
       const roomCode = await createRoom({
         maxPlayers: formData.maxPlayers,
@@ -84,7 +94,7 @@ const CreateRoomForm: React.FC = () => {
         autoMarkEnabled: formData.autoMarkEnabled,
         winningPatterns: selectedPatterns,
       });
-      
+
       toast.success(`Room created! Room code: ${roomCode}`);
       navigate("/game");
     } catch (error) {
@@ -93,7 +103,7 @@ const CreateRoomForm: React.FC = () => {
       setIsCreating(false);
     }
   };
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -105,11 +115,14 @@ const CreateRoomForm: React.FC = () => {
         <h2 className="text-2xl font-bold text-gray-900">Create Game Room</h2>
         <p className="text-gray-600 mt-1">Configure your game settings</p>
       </div>
-      
+
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
         <div className="space-y-4">
           <div>
-            <label htmlFor="maxPlayers" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="maxPlayers"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Maximum Players
             </label>
             <select
@@ -120,14 +133,19 @@ const CreateRoomForm: React.FC = () => {
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-tambola-blue focus:border-tambola-blue"
               disabled={isCreating}
             >
-              {[5, 10, 15, 20, 30, 50].map(num => (
-                <option key={num} value={num}>{num} players</option>
+              {[5, 10, 15, 20, 30, 50].map((num) => (
+                <option key={num} value={num}>
+                  {num} players
+                </option>
               ))}
             </select>
           </div>
-          
+
           <div>
-            <label htmlFor="ticketPrice" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="ticketPrice"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Ticket Price (virtual coins)
             </label>
             <input
@@ -142,9 +160,12 @@ const CreateRoomForm: React.FC = () => {
               disabled={isCreating}
             />
           </div>
-          
+
           <div>
-            <label htmlFor="numberCallSpeed" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="numberCallSpeed"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Number Call Speed (seconds)
             </label>
             <input
@@ -165,7 +186,7 @@ const CreateRoomForm: React.FC = () => {
               <span>Slow (30s)</span>
             </div>
           </div>
-          
+
           <div className="flex items-center">
             <input
               type="checkbox"
@@ -176,14 +197,19 @@ const CreateRoomForm: React.FC = () => {
               className="h-4 w-4 text-tambola-blue focus:ring-tambola-blue border-gray-300 rounded"
               disabled={isCreating}
             />
-            <label htmlFor="autoMarkEnabled" className="ml-2 block text-sm text-gray-700">
+            <label
+              htmlFor="autoMarkEnabled"
+              className="ml-2 block text-sm text-gray-700"
+            >
               Enable Auto-Daub (automatically mark numbers)
             </label>
           </div>
         </div>
-        
+
         <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Winning Patterns</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-3">
+            Winning Patterns
+          </h3>
           <div className="space-y-2">
             {[
               { id: "earlyFive", label: "Early Five" },
@@ -191,25 +217,32 @@ const CreateRoomForm: React.FC = () => {
               { id: "middleLine", label: "Middle Line" },
               { id: "bottomLine", label: "Bottom Line" },
               { id: "fullHouse", label: "Full House" },
-            ].map(pattern => (
+            ].map((pattern) => (
               <div key={pattern.id} className="flex items-center">
                 <input
                   type="checkbox"
                   id={pattern.id}
                   name={pattern.id}
-                  checked={formData.winningPatterns[pattern.id as keyof typeof formData.winningPatterns]}
+                  checked={
+                    formData.winningPatterns[
+                      pattern.id as keyof typeof formData.winningPatterns
+                    ]
+                  }
                   onChange={handlePatternChange}
                   className="h-4 w-4 text-tambola-blue focus:ring-tambola-blue border-gray-300 rounded"
                   disabled={isCreating}
                 />
-                <label htmlFor={pattern.id} className="ml-2 block text-sm text-gray-700">
+                <label
+                  htmlFor={pattern.id}
+                  className="ml-2 block text-sm text-gray-700"
+                >
                   {pattern.label}
                 </label>
               </div>
             ))}
           </div>
         </div>
-        
+
         <div className="flex justify-end space-x-4">
           <ButtonCustom
             type="button"
@@ -219,11 +252,7 @@ const CreateRoomForm: React.FC = () => {
           >
             Cancel
           </ButtonCustom>
-          <ButtonCustom
-            type="submit"
-            variant="primary"
-            disabled={isCreating}
-          >
+          <ButtonCustom type="submit" variant="primary" disabled={isCreating}>
             {isCreating ? "Creating Room..." : "Create Room"}
           </ButtonCustom>
         </div>

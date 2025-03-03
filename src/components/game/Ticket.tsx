@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGameContext } from "@/context/GameContext";
@@ -49,7 +48,7 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
                     key={`cell-${rowIndex}-${colIndex}`}
                     className={`relative flex items-center justify-center h-12 rounded 
                       ${num === null ? 'bg-gray-50' : 'bg-white border border-gray-200 cursor-pointer hover:bg-gray-50'}
-                      ${isMarked ? 'border-pink-500' : ''}
+                      ${isMarked ? 'bg-pink-200 border-pink-500' : ''}
                       transition-all duration-200 ease-in-out`}
                     onClick={() => num !== null && handleNumberClick(num)}
                     whileTap={{ scale: 0.95 }}
@@ -57,7 +56,7 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
                   >
                     {num !== null && (
                       <>
-                        <span className={`text-sm font-medium ${isMarked ? 'text-pink-500' : ''}`}>
+                        <span className={`text-sm font-medium ${isMarked ? 'text-pink-600' : ''}`}>
                           {num}
                         </span>
                         
@@ -69,9 +68,10 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
                               exit={{ scale: 0 }}
                               transition={{ type: "spring", stiffness: 500, damping: 30 }}
                               className="absolute inset-0 flex items-center justify-center"
+                              style={{ zIndex: 1 }}
                             >
-                              <div className="w-7 h-7 rounded-full bg-pink-500/10 flex items-center justify-center">
-                                <div className="w-3 h-3 rounded-full bg-pink-500"></div>
+                              <div className="w-5 h-5 rounded-full bg-pink-500/10 flex items-center justify-center">
+                                <div className="w-2 h-2 rounded-full bg-pink-500"></div>
                               </div>
                             </motion.div>
                           )}
