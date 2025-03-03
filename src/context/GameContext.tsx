@@ -36,7 +36,7 @@ interface GameContextType {
   players: Player[];
   currentPlayer: Player | null;
   calledNumbers: number[];
-  callNumber: () => void;
+  callNumber: () => Promise<void>;
   lastCalledNumber: number | null;
   tickets: Ticket[];
   markNumber: (ticketId: string, number: number) => void;
@@ -54,7 +54,7 @@ const defaultContext: GameContextType = {
   players: [],
   currentPlayer: null,
   calledNumbers: [],
-  callNumber: () => {},
+  callNumber: async () => {},
   lastCalledNumber: null,
   tickets: [],
   markNumber: () => {},
@@ -79,36 +79,22 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [roomId, setRoomId] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
 
-  // Function to generate a new Tambola ticket
   const generateTicket = (): (number | null)[][] => {
-    // A Tambola ticket has 3 rows and 9 columns
-    // Each row has 5 numbers and 4 blank spaces
-    // Numbers are arranged column-wise: 1-9, 10-19, 20-29, ..., 80-90
-    
     const ticket: (number | null)[][] = [
       Array(9).fill(null),
       Array(9).fill(null),
       Array(9).fill(null),
     ];
     
-    // Generate column ranges
     const colRanges = [
       [1, 9], [10, 19], [20, 29], [30, 39], [40, 49], 
       [50, 59], [60, 69], [70, 79], [80, 90]
     ];
     
-    // Fill each column with 1, 2, or 3 numbers
     for (let col = 0; col < 9; col++) {
-      // Decide how many numbers in this column (1, 2, or 3)
       const numberCount = Math.floor(Math.random() * 3) + 1;
-      
-      // Select which rows will have numbers
       const rowIndices = [0, 1, 2].sort(() => 0.5 - Math.random()).slice(0, numberCount);
-      
-      // Get the range for this column
       const [min, max] = colRanges[col];
-      
-      // Generate unique random numbers for this column
       const numbers: number[] = [];
       while (numbers.length < numberCount) {
         const num = Math.floor(Math.random() * (max - min + 1)) + min;
@@ -116,11 +102,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           numbers.push(num);
         }
       }
-      
-      // Sort numbers in ascending order
       numbers.sort((a, b) => a - b);
-      
-      // Place numbers in the ticket
       for (let i = 0; i < numberCount; i++) {
         ticket[rowIndices[i]][col] = numbers[i];
       }
@@ -129,11 +111,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return ticket as (number | null)[][];
   };
 
-  // Set up realtime listeners for game updates
   useEffect(() => {
     if (!roomId) return;
 
-    // Subscribe to room changes
     const roomChannel = supabase
       .channel('room-updates')
       .on('postgres_changes', 
@@ -142,7 +122,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('Room updated:', payload);
           if (payload.new && payload.eventType === 'UPDATE') {
             const roomData = payload.new as any;
-            // Update room settings
             setRoomSettings({
               roomCode: roomData.code,
               maxPlayers: roomData.max_players,
@@ -152,7 +131,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
               autoMarkEnabled: roomData.auto_mark_enabled,
             });
             
-            // Update game state based on room status
             if (roomData.status === 'playing' && gameState !== 'playing') {
               setGameState('playing');
             } else if (roomData.status === 'ended' && gameState !== 'ended') {
@@ -163,7 +141,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       )
       .subscribe();
 
-    // Subscribe to player changes
     const playersChannel = supabase
       .channel('players-updates')
       .on('postgres_changes', 
@@ -171,7 +148,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         async (payload) => {
           console.log('Player event:', payload);
           
-          // Fetch all players in the room
           const { data: playerData, error } = await supabase
             .from('players')
             .select('*')
@@ -194,7 +170,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       )
       .subscribe();
 
-    // Subscribe to called numbers
     const calledNumbersChannel = supabase
       .channel('called-numbers-updates')
       .on('postgres_changes', 
@@ -202,7 +177,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         async (payload) => {
           console.log('New number called:', payload);
           
-          // Fetch all called numbers in order
           const { data: numbersData, error } = await supabase
             .from('called_numbers')
             .select('number')
@@ -221,7 +195,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setLastCalledNumber(numbers[numbers.length - 1]);
             }
             
-            // Auto-mark numbers if enabled
             if (roomSettings?.autoMarkEnabled) {
               const latestNumber = payload.new.number;
               tickets.forEach(ticket => {
@@ -233,7 +206,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       )
       .subscribe();
 
-    // Subscribe to winners
     const winnersChannel = supabase
       .channel('winners-updates')
       .on('postgres_changes', 
@@ -241,7 +213,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         async (payload) => {
           console.log('New winner:', payload);
           
-          // Fetch winner details
           const { data: winnerData, error } = await supabase
             .from('winners')
             .select(`
@@ -284,20 +255,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [roomId, roomSettings?.autoMarkEnabled]);
 
-  // Create a new room with settings
   const createRoom = async (settings: Partial<RoomSettings>): Promise<string> => {
     try {
       setGameState("creating");
       
-      // Generate a temporary player ID
       const hostId = crypto.randomUUID();
       
-      // Convert winning patterns to array if it's not already
       const winningPatterns = settings.winningPatterns || [
         'Early Five', 'Top Line', 'Middle Line', 'Bottom Line', 'Full House'
       ];
       
-      // Insert room data into Supabase
       const { data: roomData, error: roomError } = await supabase
         .from('rooms')
         .insert({
@@ -321,7 +288,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw roomError;
       }
       
-      // Set room ID and settings
       setRoomId(roomData.id);
       setRoomSettings({
         roomCode: roomData.code,
@@ -334,7 +300,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         autoMarkEnabled: roomData.auto_mark_enabled,
       });
       
-      // Add host player
       const { data: playerData, error: playerError } = await supabase
         .from('players')
         .insert({
@@ -353,7 +318,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw playerError;
       }
       
-      // Set player ID and current player
       setPlayerId(playerData.id);
       setCurrentPlayer({
         id: playerData.id,
@@ -361,7 +325,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isReady: playerData.is_ready
       });
       
-      // Generate and add ticket for host
       const ticketNumbers = generateTicket();
       const { data: ticketData, error: ticketError } = await supabase
         .from('tickets')
@@ -376,9 +339,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (ticketError) {
         console.error("Error adding ticket:", ticketError);
-        // Continue anyway, non-critical error
       } else {
-        // Add ticket to state
         setTickets([{
           id: ticketData.id,
           numbers: ticketData.numbers as unknown as (number | null)[][],
@@ -392,7 +353,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isReady: playerData.is_ready
       }]);
       
-      // Update game state
       setGameState("waiting");
       toast.success(`Room created: ${roomData.code}`);
       
@@ -405,21 +365,17 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Generate a unique room code
   const getUniqueRoomCode = async (): Promise<string> => {
-    // Call the database function to generate a code
     const { data, error } = await supabase.rpc('generate_room_code');
     
     if (error) {
       console.error("Error generating room code:", error);
-      // Fallback to client-side generation
       return generateClientRoomCode();
     }
     
     return data;
   };
 
-  // Client-side room code generation as fallback
   const generateClientRoomCode = (): string => {
     const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let result = '';
@@ -429,12 +385,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return result;
   };
 
-  // Join an existing room
   const joinRoom = async (roomCode: string, playerName: string): Promise<void> => {
     try {
       setGameState("joining");
       
-      // Check if room exists
       const { data: roomData, error: roomError } = await supabase
         .from('rooms')
         .select()
@@ -448,7 +402,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error("Room not found");
       }
       
-      // Set room ID and settings
       setRoomId(roomData.id);
       setRoomSettings({
         roomCode: roomData.code,
@@ -461,7 +414,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         autoMarkEnabled: roomData.auto_mark_enabled,
       });
       
-      // Check if the room is full
       const { count, error: countError } = await supabase
         .from('players')
         .select('*', { count: 'exact', head: true })
@@ -469,14 +421,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (countError) {
         console.error("Error counting players:", countError);
-        // Continue anyway
       } else if (count && count >= roomData.max_players) {
         setGameState("idle");
         toast.error("This room is full. Please try another room.");
         throw new Error("Room is full");
       }
       
-      // Check if username is taken in this room
       const { data: existingPlayer, error: playerCheckError } = await supabase
         .from('players')
         .select()
@@ -486,14 +436,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (playerCheckError) {
         console.error("Error checking player name:", playerCheckError);
-        // Continue anyway
       } else if (existingPlayer) {
         setGameState("idle");
         toast.error("This name is already taken in this room. Please choose another name.");
         throw new Error("Player name taken");
       }
       
-      // Add player to room
       const { data: playerData, error: playerError } = await supabase
         .from('players')
         .insert({
@@ -512,7 +460,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw playerError;
       }
       
-      // Set player ID and current player
       setPlayerId(playerData.id);
       setCurrentPlayer({
         id: playerData.id,
@@ -520,7 +467,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isReady: playerData.is_ready
       });
       
-      // Generate and add ticket for player
       const ticketNumbers = generateTicket();
       const { data: ticketData, error: ticketError } = await supabase
         .from('tickets')
@@ -535,9 +481,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (ticketError) {
         console.error("Error adding ticket:", ticketError);
-        // Continue anyway, non-critical error
       } else {
-        // Add ticket to state
         setTickets([{
           id: ticketData.id,
           numbers: ticketData.numbers as unknown as (number | null)[][],
@@ -545,7 +489,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }]);
       }
       
-      // Fetch all players in the room
       const { data: allPlayers, error: playersError } = await supabase
         .from('players')
         .select()
@@ -561,7 +504,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })));
       }
       
-      // Fetch called numbers if game is in progress
       if (roomData.status === 'playing') {
         const { data: calledNumbersData, error: numbersError } = await supabase
           .from('called_numbers')
@@ -590,19 +532,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Call a random number
-  const callNumber = async () => {
+  const callNumber = async (): Promise<void> => {
     if (gameState !== "playing" || !roomId) return;
     
     try {
-      // Get all possible numbers (1-90)
+      console.log("Calling a number...");
       const allNumbers = Array.from({ length: 90 }, (_, i) => i + 1);
-      
-      // Filter out already called numbers
       const availableNumbers = allNumbers.filter(num => !calledNumbers.includes(num));
       
       if (availableNumbers.length === 0) {
-        // Game is over - all numbers have been called
         await supabase
           .from('rooms')
           .update({ status: 'ended' })
@@ -613,11 +551,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      // Select a random number from available numbers
       const randomIndex = Math.floor(Math.random() * availableNumbers.length);
       const newNumber = availableNumbers[randomIndex];
       
-      // Add called number to database
+      console.log(`Selected number: ${newNumber}`);
+      
       const { error } = await supabase
         .from('called_numbers')
         .insert({
@@ -631,23 +569,21 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      // Update called numbers locally
       setLastCalledNumber(newNumber);
       setCalledNumbers(prev => [...prev, newNumber]);
+      
+      toast.success(`Number called: ${newNumber}`);
     } catch (error) {
       console.error("Error calling number:", error);
       toast.error("Failed to call number. Please try again.");
     }
   };
 
-  // Mark a number on a ticket
   const markNumber = async (ticketId: string, number: number) => {
     try {
-      // First update local state for immediate feedback
       setTickets(prev => 
         prev.map(ticket => {
           if (ticket.id === ticketId && !ticket.markedNumbers.includes(number)) {
-            // Check if the number exists on this ticket
             const numberExists = ticket.numbers.some(row => 
               row.some(cell => cell === number)
             );
@@ -663,7 +599,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
       );
       
-      // Then update database
       if (ticketId && playerId && roomId) {
         const { data, error } = await supabase
           .from('tickets')
@@ -676,7 +611,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
         
-        // Convert the JSON data to an array of numbers
         const currentMarkedNumbers: number[] = Array.isArray(data.marked_numbers) 
           ? data.marked_numbers as number[]
           : [];
@@ -693,14 +627,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Claim a winning pattern
   const claimPattern = async (pattern: string) => {
     if (!currentPlayer || !roomId || !playerId) return;
     
     try {
-      // In a real app, we would validate the claim here
-      // For now, just add to winners list
-      
       const existingClaim = winners.find(
         w => w.pattern === pattern && w.player.id === currentPlayer.id
       );
@@ -710,7 +640,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      // Add claim to database
       const { error } = await supabase
         .from('winners')
         .insert({
@@ -725,7 +654,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      // Update local state
       setWinners(prev => [...prev, { pattern, player: currentPlayer }]);
       toast.success(`Congratulations! You claimed the ${pattern} pattern.`);
     } catch (error) {
@@ -734,7 +662,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Start the game
   const startGame = async () => {
     if (!roomId) return;
     
@@ -757,17 +684,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Leave the current room
   const leaveRoom = async () => {
     if (roomId && playerId) {
       try {
-        // Remove player from room
         await supabase
           .from('players')
           .delete()
           .eq('id', playerId);
         
-        // If host leaves, delete the room
         if (currentPlayer?.isReady && players.length <= 1) {
           await supabase
             .from('rooms')
@@ -779,7 +703,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     
-    // Reset all state
     setGameState("idle");
     setRoomSettings(null);
     setRoomId(null);

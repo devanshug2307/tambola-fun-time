@@ -59,6 +59,13 @@ const Game: React.FC = () => {
     }
   }, [calledNumbers, gameState, setGameState]);
   
+  // Auto-start the number calling when game state becomes "playing"
+  useEffect(() => {
+    if (gameState === "playing" && !isPlaying && !callTimer) {
+      handleStartGame();
+    }
+  }, [gameState]);
+  
   const handleStartGame = async () => {
     if (!roomSettings) return;
     
@@ -74,19 +81,19 @@ const Game: React.FC = () => {
       setIsPlaying(true);
       
       // Call the first number immediately
-      callNumber();
+      await callNumber();
       
       // Set up the timer for calling numbers
       const speed = roomSettings.numberCallSpeed || 10;
       setNextCallTime(Date.now() + speed * 1000);
       
-      const timer = setInterval(() => {
-        callNumber();
+      const timer = setInterval(async () => {
+        await callNumber();
         setNextCallTime(Date.now() + speed * 1000);
       }, speed * 1000);
       
       setCallTimer(timer);
-      toast.success("Game started! First number has been called.");
+      toast.success("Game started! Numbers will be called automatically.");
     } catch (error) {
       console.error("Error starting game:", error);
       toast.error("Failed to start game. Please try again.");
@@ -105,8 +112,8 @@ const Game: React.FC = () => {
       const speed = roomSettings?.numberCallSpeed || 10;
       setNextCallTime(Date.now() + speed * 1000);
       
-      const timer = setInterval(() => {
-        callNumber();
+      const timer = setInterval(async () => {
+        await callNumber();
         setNextCallTime(Date.now() + speed * 1000);
       }, speed * 1000);
       
@@ -135,7 +142,16 @@ const Game: React.FC = () => {
   const timeRemaining = getTimeRemaining();
   
   // Add debug information to help diagnose issues
-  console.log("Game component state:", { gameState, roomSettings, players, tickets });
+  console.log("Game component state:", { 
+    gameState, 
+    isPlaying,
+    callTimer: !!callTimer,
+    roomSettings, 
+    players, 
+    tickets,
+    calledNumbers,
+    lastCalledNumber 
+  });
   
   // Show loading state while context initializes
   if (gameState === "creating" || gameState === "joining") {

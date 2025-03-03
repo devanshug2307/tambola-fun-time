@@ -36,7 +36,7 @@ const NumberBoard: React.FC = () => {
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
               className="relative"
             >
-              <div className="called-number-display">
+              <div className="w-20 h-20 flex items-center justify-center bg-pink-500 text-white rounded-full font-bold text-3xl mx-auto">
                 {lastCalledNumber}
               </div>
               <div className="text-sm text-gray-500 mt-2">Last Called Number</div>
@@ -45,7 +45,7 @@ const NumberBoard: React.FC = () => {
         </AnimatePresence>
       </div>
       
-      <div className="number-board">
+      <div className="grid grid-cols-10 gap-2">
         {allNumbers.map(num => {
           const isCalled = calledNumbers.includes(num);
           const isLastCalled = num === lastCalledNumber;
@@ -53,10 +53,14 @@ const NumberBoard: React.FC = () => {
           return (
             <motion.div
               key={num}
-              className={`number-board-cell ${isCalled ? 'called' : ''}`}
+              className={`w-full aspect-square flex items-center justify-center rounded-md text-lg font-medium border ${
+                isCalled 
+                  ? 'bg-pink-500 text-white border-pink-600' 
+                  : 'bg-white text-gray-700 border-gray-200'
+              }`}
               animate={
                 isLastCalled && animating
-                  ? { scale: [1, 1.1, 1], backgroundColor: isCalled ? 'rgb(236, 72, 153)' : 'white' }
+                  ? { scale: [1, 1.1, 1], backgroundColor: 'rgb(236, 72, 153)' }
                   : {}
               }
               transition={{ duration: 0.5 }}
@@ -70,7 +74,7 @@ const NumberBoard: React.FC = () => {
       <div className="mt-8 text-center">
         <div className="inline-flex items-center gap-4 text-sm text-gray-500">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-tambola-pink"></div>
+            <div className="w-3 h-3 rounded-full bg-pink-500"></div>
             <span>Called</span>
           </div>
           
