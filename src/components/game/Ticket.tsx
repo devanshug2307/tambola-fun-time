@@ -8,7 +8,7 @@ interface TicketProps {
 }
 
 const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
-  const { tickets, markNumber, calledNumbers, roomSettings } = useGameContext();
+  const { tickets, markNumber, calledNumbers, roomSettings, claimPattern } = useGameContext();
   const [animatingCell, setAnimatingCell] = useState<string | null>(null);
   
   const ticket = tickets.find(t => t.id === ticketId);
@@ -24,6 +24,10 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
       setTimeout(() => setAnimatingCell(null), 500);
       markNumber(ticketId, num);
     }
+  };
+
+  const handleClaimPattern = (pattern: string) => {
+    claimPattern(pattern);
   };
   
   return (
@@ -41,17 +45,19 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
                 const isCalled = num !== null && calledNumbers.includes(num);
                 
                 return (
-                  <div 
+                  <motion.div 
                     key={`cell-${rowIndex}-${colIndex}`}
                     className={`relative flex items-center justify-center h-12 rounded 
                       ${num === null ? 'bg-gray-50' : 'bg-white border border-gray-200 cursor-pointer hover:bg-gray-50'}
-                      ${isMarked ? 'border-tambola-pink' : ''}
+                      ${isMarked ? 'border-pink-500' : ''}
                       transition-all duration-200 ease-in-out`}
                     onClick={() => num !== null && handleNumberClick(num)}
+                    whileTap={{ scale: 0.95 }}
+                    animate={animatingCell === `${num}` ? { scale: [1, 0.9, 1.1, 1] } : {}}
                   >
                     {num !== null && (
                       <>
-                        <span className={`text-sm font-medium ${isMarked ? 'text-tambola-pink' : ''}`}>
+                        <span className={`text-sm font-medium ${isMarked ? 'text-pink-500' : ''}`}>
                           {num}
                         </span>
                         
@@ -64,8 +70,8 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
                               transition={{ type: "spring", stiffness: 500, damping: 30 }}
                               className="absolute inset-0 flex items-center justify-center"
                             >
-                              <div className="w-7 h-7 rounded-full bg-tambola-pink/10 flex items-center justify-center">
-                                <div className="w-3 h-3 rounded-full bg-tambola-pink"></div>
+                              <div className="w-7 h-7 rounded-full bg-pink-500/10 flex items-center justify-center">
+                                <div className="w-3 h-3 rounded-full bg-pink-500"></div>
                               </div>
                             </motion.div>
                           )}
@@ -79,13 +85,13 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
                               exit={{ opacity: 0 }}
                               className="absolute top-0 right-0"
                             >
-                              <div className="w-2 h-2 rounded-full bg-tambola-amber"></div>
+                              <div className="w-2 h-2 rounded-full bg-amber-500"></div>
                             </motion.div>
                           )}
                         </AnimatePresence>
                       </>
                     )}
-                  </div>
+                  </motion.div>
                 );
               })}
             </React.Fragment>
@@ -100,12 +106,14 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
         
         <div className="flex space-x-2">
           <button 
-            className="px-3 py-1 bg-tambola-pink text-white text-sm rounded-md hover:bg-tambola-pink/90 transition-colors"
+            className="px-3 py-1 bg-pink-500 text-white text-sm rounded-md hover:bg-pink-600 transition-colors"
+            onClick={() => handleClaimPattern('Early Five')}
           >
             Claim Early 5
           </button>
           <button 
-            className="px-3 py-1 bg-tambola-blue text-white text-sm rounded-md hover:bg-tambola-blue/90 transition-colors"
+            className="px-3 py-1 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 transition-colors"
+            onClick={() => handleClaimPattern('Full House')}
           >
             Claim Full House
           </button>

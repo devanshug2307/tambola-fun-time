@@ -36,7 +36,7 @@ const NumberBoard: React.FC = () => {
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
               className="relative"
             >
-              <div className="w-20 h-20 flex items-center justify-center bg-pink-500 text-white rounded-full font-bold text-3xl mx-auto">
+              <div className="w-24 h-24 flex items-center justify-center bg-pink-500 text-white rounded-full font-bold text-4xl mx-auto shadow-lg">
                 {lastCalledNumber}
               </div>
               <div className="text-sm text-gray-500 mt-2">Last Called Number</div>
@@ -60,10 +60,14 @@ const NumberBoard: React.FC = () => {
               }`}
               animate={
                 isLastCalled && animating
-                  ? { scale: [1, 1.1, 1], backgroundColor: 'rgb(236, 72, 153)' }
+                  ? { 
+                      scale: [1, 1.2, 1], 
+                      backgroundColor: ['rgb(219, 39, 119)', 'rgb(236, 72, 153)', 'rgb(219, 39, 119)'],
+                      boxShadow: ['0 0 0 rgba(236, 72, 153, 0)', '0 0 15px rgba(236, 72, 153, 0.7)', '0 0 0 rgba(236, 72, 153, 0)']
+                    }
                   : {}
               }
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 1.5, repeat: 0 }}
             >
               {num}
             </motion.div>

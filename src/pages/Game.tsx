@@ -27,6 +27,7 @@ const Game: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [callTimer, setCallTimer] = useState<NodeJS.Timeout | null>(null);
   const [nextCallTime, setNextCallTime] = useState<number | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   
   // Redirect if no room settings (means we're not in a valid game)
   useEffect(() => {
@@ -66,6 +67,25 @@ const Game: React.FC = () => {
     }
   }, [gameState]);
   
+  // Timer countdown effect
+  useEffect(() => {
+    if (isPlaying && nextCallTime) {
+      const timerInterval = setInterval(() => {
+        const now = Date.now();
+        const remaining = Math.max(0, nextCallTime - now);
+        const seconds = Math.ceil(remaining / 1000);
+        
+        setTimeRemaining(seconds);
+        
+        if (seconds <= 0 && callTimer) {
+          clearInterval(timerInterval);
+        }
+      }, 100); // Update more frequently for smoother countdown
+      
+      return () => clearInterval(timerInterval);
+    }
+  }, [isPlaying, nextCallTime, callTimer]);
+  
   const handleStartGame = async () => {
     if (!roomSettings) return;
     
@@ -86,6 +106,7 @@ const Game: React.FC = () => {
       // Set up the timer for calling numbers
       const speed = roomSettings.numberCallSpeed || 10;
       setNextCallTime(Date.now() + speed * 1000);
+      setTimeRemaining(speed);
       
       const timer = setInterval(async () => {
         await callNumber();
@@ -106,11 +127,13 @@ const Game: React.FC = () => {
       if (callTimer) clearInterval(callTimer);
       setCallTimer(null);
       setNextCallTime(null);
+      setTimeRemaining(null);
       toast.info("Game paused");
     } else {
       // Resume the game
       const speed = roomSettings?.numberCallSpeed || 10;
       setNextCallTime(Date.now() + speed * 1000);
+      setTimeRemaining(speed);
       
       const timer = setInterval(async () => {
         await callNumber();
@@ -130,17 +153,6 @@ const Game: React.FC = () => {
     navigate("/");
   };
   
-  // Calculate time remaining until next call
-  const getTimeRemaining = () => {
-    if (!nextCallTime || !isPlaying) return null;
-    
-    const now = Date.now();
-    const remaining = Math.max(0, nextCallTime - now);
-    return Math.ceil(remaining / 1000);
-  };
-  
-  const timeRemaining = getTimeRemaining();
-  
   // Add debug information to help diagnose issues
   console.log("Game component state:", { 
     gameState, 
@@ -150,7 +162,8 @@ const Game: React.FC = () => {
     players, 
     tickets,
     calledNumbers,
-    lastCalledNumber 
+    lastCalledNumber,
+    timeRemaining
   });
   
   // Show loading state while context initializes
