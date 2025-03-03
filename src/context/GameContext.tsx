@@ -1,8 +1,8 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { Json } from "@/integrations/supabase/types";
 
 type GameState = "idle" | "creating" | "joining" | "waiting" | "playing" | "ended";
 
@@ -80,7 +80,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [playerId, setPlayerId] = useState<string | null>(null);
 
   // Function to generate a new Tambola ticket
-  const generateTicket = (): number[][] => {
+  const generateTicket = (): (number | null)[][] => {
     // A Tambola ticket has 3 rows and 9 columns
     // Each row has 5 numbers and 4 blank spaces
     // Numbers are arranged column-wise: 1-9, 10-19, 20-29, ..., 80-90
@@ -126,7 +126,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     
-    return ticket as number[][];
+    return ticket as (number | null)[][];
   };
 
   // Set up realtime listeners for game updates
@@ -308,7 +308,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ticket_price: settings.ticketPrice || 5,
           number_call_speed: settings.numberCallSpeed || 10,
           auto_mark_enabled: settings.autoMarkEnabled ?? false,
-          winning_patterns: winningPatterns,
+          winning_patterns: winningPatterns as unknown as Json,
           status: 'waiting'
         })
         .select()
@@ -328,7 +328,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         maxPlayers: roomData.max_players,
         ticketPrice: roomData.ticket_price,
         numberCallSpeed: roomData.number_call_speed,
-        winningPatterns: roomData.winning_patterns,
+        winningPatterns: Array.isArray(roomData.winning_patterns) 
+          ? roomData.winning_patterns as string[]
+          : [],
         autoMarkEnabled: roomData.auto_mark_enabled,
       });
       
@@ -366,8 +368,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .insert({
           player_id: playerData.id,
           room_id: roomData.id,
-          numbers: ticketNumbers,
-          marked_numbers: []
+          numbers: ticketNumbers as unknown as Json,
+          marked_numbers: [] as unknown as Json
         })
         .select()
         .single();
@@ -379,7 +381,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Add ticket to state
         setTickets([{
           id: ticketData.id,
-          numbers: ticketData.numbers,
+          numbers: ticketData.numbers as unknown as (number | null)[][],
           markedNumbers: []
         }]);
       }
@@ -453,7 +455,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         maxPlayers: roomData.max_players,
         ticketPrice: roomData.ticket_price,
         numberCallSpeed: roomData.number_call_speed,
-        winningPatterns: roomData.winning_patterns,
+        winningPatterns: Array.isArray(roomData.winning_patterns) 
+          ? roomData.winning_patterns as string[]
+          : [],
         autoMarkEnabled: roomData.auto_mark_enabled,
       });
       
@@ -523,8 +527,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .insert({
           player_id: playerData.id,
           room_id: roomData.id,
-          numbers: ticketNumbers,
-          marked_numbers: []
+          numbers: ticketNumbers as unknown as Json,
+          marked_numbers: [] as unknown as Json
         })
         .select()
         .single();
@@ -536,7 +540,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Add ticket to state
         setTickets([{
           id: ticketData.id,
-          numbers: ticketData.numbers,
+          numbers: ticketData.numbers as unknown as (number | null)[][],
           markedNumbers: []
         }]);
       }
@@ -672,11 +676,16 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
         
-        const markedNumbers = [...data.marked_numbers, number].filter((v, i, a) => a.indexOf(v) === i);
+        // Convert the JSON data to an array of numbers
+        const currentMarkedNumbers: number[] = Array.isArray(data.marked_numbers) 
+          ? data.marked_numbers as number[]
+          : [];
+        
+        const markedNumbers = [...currentMarkedNumbers, number].filter((v, i, a) => a.indexOf(v) === i);
         
         await supabase
           .from('tickets')
-          .update({ marked_numbers: markedNumbers })
+          .update({ marked_numbers: markedNumbers as unknown as Json })
           .eq('id', ticketId);
       }
     } catch (error) {
