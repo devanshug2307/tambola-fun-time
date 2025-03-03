@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -7,6 +8,7 @@ import Ticket from "@/components/game/Ticket";
 import NumberBoard from "@/components/game/NumberBoard";
 import { Users, ArrowLeft, Play, Pause, Clock, Trophy } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const Game: React.FC = () => {
   const navigate = useNavigate();
@@ -57,24 +59,38 @@ const Game: React.FC = () => {
     }
   }, [calledNumbers, gameState, setGameState]);
   
-  const handleStartGame = () => {
-    setGameState("playing");
-    setIsPlaying(true);
+  const handleStartGame = async () => {
+    if (!roomSettings) return;
     
-    // Call the first number immediately
-    callNumber();
-    
-    // Set up the timer for calling numbers
-    const speed = roomSettings?.numberCallSpeed || 10;
-    setNextCallTime(Date.now() + speed * 1000);
-    
-    const timer = setInterval(() => {
+    try {
+      // First, update the room status to 'playing' in the database
+      // This will be handled by the GameContext through realtime subscriptions
+      await supabase
+        .from('rooms')
+        .update({ status: 'playing' })
+        .eq('code', roomSettings.roomCode);
+        
+      setGameState("playing");
+      setIsPlaying(true);
+      
+      // Call the first number immediately
       callNumber();
+      
+      // Set up the timer for calling numbers
+      const speed = roomSettings.numberCallSpeed || 10;
       setNextCallTime(Date.now() + speed * 1000);
-    }, speed * 1000);
-    
-    setCallTimer(timer);
-    toast.success("Game started! First number has been called.");
+      
+      const timer = setInterval(() => {
+        callNumber();
+        setNextCallTime(Date.now() + speed * 1000);
+      }, speed * 1000);
+      
+      setCallTimer(timer);
+      toast.success("Game started! First number has been called.");
+    } catch (error) {
+      console.error("Error starting game:", error);
+      toast.error("Failed to start game. Please try again.");
+    }
   };
   
   const handleTogglePause = () => {

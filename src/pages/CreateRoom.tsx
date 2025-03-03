@@ -2,7 +2,6 @@
 import React from "react";
 import { motion } from "framer-motion";
 import CreateRoomForm from "@/components/game/CreateRoomForm";
-import { GameProvider } from "@/context/GameContext";
 
 const CreateRoom: React.FC = () => {
   return (

@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 const CreateRoomForm: React.FC = () => {
   const navigate = useNavigate();
-  const { createRoom, gameState } = useGameContext();
+  const { createRoom } = useGameContext();
   const [isCreating, setIsCreating] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -50,7 +50,7 @@ const CreateRoomForm: React.FC = () => {
     }));
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Make sure at least one winning pattern is selected
@@ -77,7 +77,7 @@ const CreateRoomForm: React.FC = () => {
       .filter(p => p !== "");
     
     try {
-      const roomCode = createRoom({
+      const roomCode = await createRoom({
         maxPlayers: formData.maxPlayers,
         ticketPrice: formData.ticketPrice,
         numberCallSpeed: formData.numberCallSpeed,
@@ -118,6 +118,7 @@ const CreateRoomForm: React.FC = () => {
               value={formData.maxPlayers}
               onChange={handleChange}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-tambola-blue focus:border-tambola-blue"
+              disabled={isCreating}
             >
               {[5, 10, 15, 20, 30, 50].map(num => (
                 <option key={num} value={num}>{num} players</option>
@@ -138,6 +139,7 @@ const CreateRoomForm: React.FC = () => {
               value={formData.ticketPrice}
               onChange={handleChange}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-tambola-blue focus:border-tambola-blue"
+              disabled={isCreating}
             />
           </div>
           
@@ -155,6 +157,7 @@ const CreateRoomForm: React.FC = () => {
               value={formData.numberCallSpeed}
               onChange={handleChange}
               className="block w-full cursor-pointer"
+              disabled={isCreating}
             />
             <div className="flex justify-between text-xs text-gray-500 mt-1">
               <span>Fast (5s)</span>
@@ -171,6 +174,7 @@ const CreateRoomForm: React.FC = () => {
               checked={formData.autoMarkEnabled}
               onChange={handleChange}
               className="h-4 w-4 text-tambola-blue focus:ring-tambola-blue border-gray-300 rounded"
+              disabled={isCreating}
             />
             <label htmlFor="autoMarkEnabled" className="ml-2 block text-sm text-gray-700">
               Enable Auto-Daub (automatically mark numbers)
@@ -196,6 +200,7 @@ const CreateRoomForm: React.FC = () => {
                   checked={formData.winningPatterns[pattern.id as keyof typeof formData.winningPatterns]}
                   onChange={handlePatternChange}
                   className="h-4 w-4 text-tambola-blue focus:ring-tambola-blue border-gray-300 rounded"
+                  disabled={isCreating}
                 />
                 <label htmlFor={pattern.id} className="ml-2 block text-sm text-gray-700">
                   {pattern.label}

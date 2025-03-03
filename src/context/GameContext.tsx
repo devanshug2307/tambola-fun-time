@@ -1,6 +1,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 type GameState = "idle" | "creating" | "joining" | "waiting" | "playing" | "ended";
 
@@ -29,8 +31,8 @@ interface GameContextType {
   gameState: GameState;
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
   roomSettings: RoomSettings | null;
-  createRoom: (settings: Partial<RoomSettings>) => string;
-  joinRoom: (roomCode: string, playerName: string) => void;
+  createRoom: (settings: Partial<RoomSettings>) => Promise<string>;
+  joinRoom: (roomCode: string, playerName: string) => Promise<void>;
   players: Player[];
   currentPlayer: Player | null;
   calledNumbers: number[];
@@ -47,8 +49,8 @@ const defaultContext: GameContextType = {
   gameState: "idle",
   setGameState: () => {},
   roomSettings: null,
-  createRoom: () => "",
-  joinRoom: () => {},
+  createRoom: async () => "",
+  joinRoom: async () => {},
   players: [],
   currentPlayer: null,
   calledNumbers: [],
@@ -74,25 +76,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [lastCalledNumber, setLastCalledNumber] = useState<number | null>(null);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [winners, setWinners] = useState<{ pattern: string; player: Player }[]>([]);
-
-  // Cleanup function to reset game state when navigating away
-  useEffect(() => {
-    return () => {
-      if (gameState !== "idle") {
-        console.log("Cleaning up game context");
-      }
-    };
-  }, []);
-
-  // Function to generate a random 6-character room code
-  const generateRoomCode = () => {
-    const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let result = '';
-    for (let i = 0; i < 6; i++) {
-      result += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return result;
-  };
+  const [roomId, setRoomId] = useState<string | null>(null);
+  const [playerId, setPlayerId] = useState<string | null>(null);
 
   // Function to generate a new Tambola ticket
   const generateTicket = (): number[][] => {
@@ -144,50 +129,272 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return ticket as number[][];
   };
 
+  // Set up realtime listeners for game updates
+  useEffect(() => {
+    if (!roomId) return;
+
+    // Subscribe to room changes
+    const roomChannel = supabase
+      .channel('room-updates')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` }, 
+        (payload) => {
+          console.log('Room updated:', payload);
+          if (payload.new && payload.eventType === 'UPDATE') {
+            const roomData = payload.new as any;
+            // Update room settings
+            setRoomSettings({
+              roomCode: roomData.code,
+              maxPlayers: roomData.max_players,
+              ticketPrice: roomData.ticket_price,
+              numberCallSpeed: roomData.number_call_speed,
+              winningPatterns: roomData.winning_patterns || [],
+              autoMarkEnabled: roomData.auto_mark_enabled,
+            });
+            
+            // Update game state based on room status
+            if (roomData.status === 'playing' && gameState !== 'playing') {
+              setGameState('playing');
+            } else if (roomData.status === 'ended' && gameState !== 'ended') {
+              setGameState('ended');
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to player changes
+    const playersChannel = supabase
+      .channel('players-updates')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${roomId}` }, 
+        async (payload) => {
+          console.log('Player event:', payload);
+          
+          // Fetch all players in the room
+          const { data: playerData, error } = await supabase
+            .from('players')
+            .select('*')
+            .eq('room_id', roomId);
+            
+          if (error) {
+            console.error('Error fetching players:', error);
+            return;
+          }
+          
+          if (playerData) {
+            const formattedPlayers = playerData.map(p => ({
+              id: p.id,
+              name: p.name,
+              isReady: p.is_ready,
+            }));
+            setPlayers(formattedPlayers);
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to called numbers
+    const calledNumbersChannel = supabase
+      .channel('called-numbers-updates')
+      .on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'called_numbers', filter: `room_id=eq.${roomId}` }, 
+        async (payload) => {
+          console.log('New number called:', payload);
+          
+          // Fetch all called numbers in order
+          const { data: numbersData, error } = await supabase
+            .from('called_numbers')
+            .select('number')
+            .eq('room_id', roomId)
+            .order('called_at', { ascending: true });
+            
+          if (error) {
+            console.error('Error fetching called numbers:', error);
+            return;
+          }
+          
+          if (numbersData) {
+            const numbers = numbersData.map(n => n.number);
+            setCalledNumbers(numbers);
+            if (numbers.length > 0) {
+              setLastCalledNumber(numbers[numbers.length - 1]);
+            }
+            
+            // Auto-mark numbers if enabled
+            if (roomSettings?.autoMarkEnabled) {
+              const latestNumber = payload.new.number;
+              tickets.forEach(ticket => {
+                markNumber(ticket.id, latestNumber);
+              });
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to winners
+    const winnersChannel = supabase
+      .channel('winners-updates')
+      .on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'winners', filter: `room_id=eq.${roomId}` }, 
+        async (payload) => {
+          console.log('New winner:', payload);
+          
+          // Fetch winner details
+          const { data: winnerData, error } = await supabase
+            .from('winners')
+            .select(`
+              id,
+              pattern,
+              player_id,
+              players (
+                id,
+                name,
+                is_ready
+              )
+            `)
+            .eq('room_id', roomId);
+            
+          if (error) {
+            console.error('Error fetching winners:', error);
+            return;
+          }
+          
+          if (winnerData) {
+            const formattedWinners = winnerData.map(w => ({
+              pattern: w.pattern,
+              player: {
+                id: w.players.id,
+                name: w.players.name,
+                isReady: w.players.is_ready,
+              }
+            }));
+            setWinners(formattedWinners);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(roomChannel);
+      supabase.removeChannel(playersChannel);
+      supabase.removeChannel(calledNumbersChannel);
+      supabase.removeChannel(winnersChannel);
+    };
+  }, [roomId, roomSettings?.autoMarkEnabled]);
+
   // Create a new room with settings
-  const createRoom = (settings: Partial<RoomSettings>): string => {
+  const createRoom = async (settings: Partial<RoomSettings>): Promise<string> => {
     try {
       setGameState("creating");
-      const newRoomCode = generateRoomCode();
       
-      const newSettings: RoomSettings = {
-        roomCode: newRoomCode,
-        maxPlayers: settings.maxPlayers || 10,
-        ticketPrice: settings.ticketPrice || 0,
-        numberCallSpeed: settings.numberCallSpeed || 10,
-        winningPatterns: settings.winningPatterns || ['Early Five', 'Top Line', 'Middle Line', 'Bottom Line', 'Full House'],
-        autoMarkEnabled: settings.autoMarkEnabled ?? false,
-      };
+      // Generate a temporary player ID
+      const hostId = crypto.randomUUID();
       
-      setRoomSettings(newSettings);
+      // Convert winning patterns to array if it's not already
+      const winningPatterns = settings.winningPatterns || [
+        'Early Five', 'Top Line', 'Middle Line', 'Bottom Line', 'Full House'
+      ];
       
-      // Create a host player
-      const hostPlayer: Player = {
-        id: `host-${Date.now()}`,
-        name: "Host",
-        isReady: true,
-      };
+      // Insert room data into Supabase
+      const { data: roomData, error: roomError } = await supabase
+        .from('rooms')
+        .insert({
+          code: settings.roomCode || await getUniqueRoomCode(),
+          host_name: "Host",
+          host_id: hostId,
+          max_players: settings.maxPlayers || 10,
+          ticket_price: settings.ticketPrice || 5,
+          number_call_speed: settings.numberCallSpeed || 10,
+          auto_mark_enabled: settings.autoMarkEnabled ?? false,
+          winning_patterns: winningPatterns,
+          status: 'waiting'
+        })
+        .select()
+        .single();
       
-      setCurrentPlayer(hostPlayer);
-      setPlayers([hostPlayer]);
+      if (roomError) {
+        console.error("Error creating room:", roomError);
+        setGameState("idle");
+        toast.error("Failed to create room. Please try again.");
+        throw roomError;
+      }
       
-      // Generate a ticket for the host
-      const hostTicket: Ticket = {
-        id: `ticket-${Date.now()}`,
-        numbers: generateTicket() as any,
-        markedNumbers: [],
-      };
+      // Set room ID and settings
+      setRoomId(roomData.id);
+      setRoomSettings({
+        roomCode: roomData.code,
+        maxPlayers: roomData.max_players,
+        ticketPrice: roomData.ticket_price,
+        numberCallSpeed: roomData.number_call_speed,
+        winningPatterns: roomData.winning_patterns,
+        autoMarkEnabled: roomData.auto_mark_enabled,
+      });
       
-      setTickets([hostTicket]);
+      // Add host player
+      const { data: playerData, error: playerError } = await supabase
+        .from('players')
+        .insert({
+          room_id: roomData.id,
+          name: "Host",
+          is_host: true,
+          is_ready: true
+        })
+        .select()
+        .single();
       
-      // Simulate network delay for creating a room
-      setTimeout(() => {
-        setGameState("waiting");
-        console.log("Room created:", newRoomCode);
-        toast.success(`Room created: ${newRoomCode}`);
-      }, 1000);
+      if (playerError) {
+        console.error("Error adding host player:", playerError);
+        setGameState("idle");
+        toast.error("Failed to create room. Please try again.");
+        throw playerError;
+      }
       
-      return newRoomCode;
+      // Set player ID and current player
+      setPlayerId(playerData.id);
+      setCurrentPlayer({
+        id: playerData.id,
+        name: playerData.name,
+        isReady: playerData.is_ready
+      });
+      
+      // Generate and add ticket for host
+      const ticketNumbers = generateTicket();
+      const { data: ticketData, error: ticketError } = await supabase
+        .from('tickets')
+        .insert({
+          player_id: playerData.id,
+          room_id: roomData.id,
+          numbers: ticketNumbers,
+          marked_numbers: []
+        })
+        .select()
+        .single();
+      
+      if (ticketError) {
+        console.error("Error adding ticket:", ticketError);
+        // Continue anyway, non-critical error
+      } else {
+        // Add ticket to state
+        setTickets([{
+          id: ticketData.id,
+          numbers: ticketData.numbers,
+          markedNumbers: []
+        }]);
+      }
+      
+      setPlayers([{
+        id: playerData.id,
+        name: playerData.name,
+        isReady: playerData.is_ready
+      }]);
+      
+      // Update game state
+      setGameState("waiting");
+      toast.success(`Room created: ${roomData.code}`);
+      
+      return roomData.code;
     } catch (error) {
       console.error("Error creating room:", error);
       toast.error("Failed to create room. Please try again.");
@@ -196,145 +403,378 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Generate a unique room code
+  const getUniqueRoomCode = async (): Promise<string> => {
+    // Call the database function to generate a code
+    const { data, error } = await supabase.rpc('generate_room_code');
+    
+    if (error) {
+      console.error("Error generating room code:", error);
+      // Fallback to client-side generation
+      return generateClientRoomCode();
+    }
+    
+    return data;
+  };
+
+  // Client-side room code generation as fallback
+  const generateClientRoomCode = (): string => {
+    const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+  };
+
   // Join an existing room
-  const joinRoom = (roomCode: string, playerName: string) => {
+  const joinRoom = async (roomCode: string, playerName: string): Promise<void> => {
     try {
       setGameState("joining");
       
-      // In a real app, we would validate the room code here
-      // For now, we'll just simulate joining a room
+      // Check if room exists
+      const { data: roomData, error: roomError } = await supabase
+        .from('rooms')
+        .select()
+        .eq('code', roomCode.toUpperCase())
+        .single();
       
-      // Create demo room settings based on the provided code
-      const demoRoomSettings: RoomSettings = {
-        roomCode: roomCode,
-        maxPlayers: 10,
-        ticketPrice: 5,
-        numberCallSpeed: 10,
-        winningPatterns: ['Early Five', 'Top Line', 'Middle Line', 'Bottom Line', 'Full House'],
-        autoMarkEnabled: false,
-      };
+      if (roomError) {
+        console.error("Error finding room:", roomError);
+        setGameState("idle");
+        toast.error("Room not found. Please check the room code and try again.");
+        throw new Error("Room not found");
+      }
       
-      setRoomSettings(demoRoomSettings);
+      // Set room ID and settings
+      setRoomId(roomData.id);
+      setRoomSettings({
+        roomCode: roomData.code,
+        maxPlayers: roomData.max_players,
+        ticketPrice: roomData.ticket_price,
+        numberCallSpeed: roomData.number_call_speed,
+        winningPatterns: roomData.winning_patterns,
+        autoMarkEnabled: roomData.auto_mark_enabled,
+      });
       
-      // Create a player
-      const newPlayer: Player = {
-        id: `player-${Date.now()}`,
-        name: playerName,
-        isReady: false,
-      };
+      // Check if the room is full
+      const { count, error: countError } = await supabase
+        .from('players')
+        .select('*', { count: 'exact', head: true })
+        .eq('room_id', roomData.id);
       
-      setCurrentPlayer(newPlayer);
+      if (countError) {
+        console.error("Error counting players:", countError);
+        // Continue anyway
+      } else if (count && count >= roomData.max_players) {
+        setGameState("idle");
+        toast.error("This room is full. Please try another room.");
+        throw new Error("Room is full");
+      }
       
-      // Add some fake players
-      const fakePlayers = [
-        { id: 'player-1', name: 'Alice', isReady: true },
-        { id: 'player-2', name: 'Bob', isReady: false },
-        { id: 'player-3', name: 'Charlie', isReady: true },
-      ];
+      // Check if username is taken in this room
+      const { data: existingPlayer, error: playerCheckError } = await supabase
+        .from('players')
+        .select()
+        .eq('room_id', roomData.id)
+        .eq('name', playerName)
+        .maybeSingle();
       
-      setPlayers([...fakePlayers, newPlayer]);
+      if (playerCheckError) {
+        console.error("Error checking player name:", playerCheckError);
+        // Continue anyway
+      } else if (existingPlayer) {
+        setGameState("idle");
+        toast.error("This name is already taken in this room. Please choose another name.");
+        throw new Error("Player name taken");
+      }
       
-      // Generate a ticket for the player
-      const newTicket: Ticket = {
-        id: `ticket-${Date.now()}`,
-        numbers: generateTicket() as any,
-        markedNumbers: [],
-      };
+      // Add player to room
+      const { data: playerData, error: playerError } = await supabase
+        .from('players')
+        .insert({
+          room_id: roomData.id,
+          name: playerName,
+          is_host: false,
+          is_ready: false
+        })
+        .select()
+        .single();
       
-      setTickets([newTicket]);
+      if (playerError) {
+        console.error("Error adding player:", playerError);
+        setGameState("idle");
+        toast.error("Failed to join room. Please try again.");
+        throw playerError;
+      }
       
-      // Simulate network delay for joining a room
-      setTimeout(() => {
+      // Set player ID and current player
+      setPlayerId(playerData.id);
+      setCurrentPlayer({
+        id: playerData.id,
+        name: playerData.name,
+        isReady: playerData.is_ready
+      });
+      
+      // Generate and add ticket for player
+      const ticketNumbers = generateTicket();
+      const { data: ticketData, error: ticketError } = await supabase
+        .from('tickets')
+        .insert({
+          player_id: playerData.id,
+          room_id: roomData.id,
+          numbers: ticketNumbers,
+          marked_numbers: []
+        })
+        .select()
+        .single();
+      
+      if (ticketError) {
+        console.error("Error adding ticket:", ticketError);
+        // Continue anyway, non-critical error
+      } else {
+        // Add ticket to state
+        setTickets([{
+          id: ticketData.id,
+          numbers: ticketData.numbers,
+          markedNumbers: []
+        }]);
+      }
+      
+      // Fetch all players in the room
+      const { data: allPlayers, error: playersError } = await supabase
+        .from('players')
+        .select()
+        .eq('room_id', roomData.id);
+      
+      if (playersError) {
+        console.error("Error fetching players:", playersError);
+      } else {
+        setPlayers(allPlayers.map(p => ({
+          id: p.id,
+          name: p.name,
+          isReady: p.is_ready
+        })));
+      }
+      
+      // Fetch called numbers if game is in progress
+      if (roomData.status === 'playing') {
+        const { data: calledNumbersData, error: numbersError } = await supabase
+          .from('called_numbers')
+          .select('number')
+          .eq('room_id', roomData.id)
+          .order('called_at', { ascending: true });
+        
+        if (numbersError) {
+          console.error("Error fetching called numbers:", numbersError);
+        } else if (calledNumbersData && calledNumbersData.length > 0) {
+          const numbers = calledNumbersData.map(n => n.number);
+          setCalledNumbers(numbers);
+          setLastCalledNumber(numbers[numbers.length - 1]);
+        }
+        
+        setGameState('playing');
+      } else {
         setGameState("waiting");
-        console.log("Joined room:", roomCode);
-        toast.success(`Joined room: ${roomCode}`);
-      }, 1000);
+      }
+      
+      toast.success(`Joined room: ${roomData.code}`);
     } catch (error) {
       console.error("Error joining room:", error);
-      toast.error("Failed to join room. Please check the room code and try again.");
       setGameState("idle");
       throw error;
     }
   };
 
   // Call a random number
-  const callNumber = () => {
-    if (gameState !== "playing") return;
+  const callNumber = async () => {
+    if (gameState !== "playing" || !roomId) return;
     
-    // Get all possible numbers (1-90)
-    const allNumbers = Array.from({ length: 90 }, (_, i) => i + 1);
-    
-    // Filter out already called numbers
-    const availableNumbers = allNumbers.filter(num => !calledNumbers.includes(num));
-    
-    if (availableNumbers.length === 0) {
-      // Game is over - all numbers have been called
-      setGameState("ended");
-      toast.info("Game over! All numbers have been called.");
-      return;
-    }
-    
-    // Select a random number from available numbers
-    const randomIndex = Math.floor(Math.random() * availableNumbers.length);
-    const newNumber = availableNumbers[randomIndex];
-    
-    // Update called numbers
-    setLastCalledNumber(newNumber);
-    setCalledNumbers(prev => [...prev, newNumber]);
-    
-    // Auto-mark numbers if enabled
-    if (roomSettings?.autoMarkEnabled) {
-      tickets.forEach(ticket => {
-        markNumber(ticket.id, newNumber);
-      });
+    try {
+      // Get all possible numbers (1-90)
+      const allNumbers = Array.from({ length: 90 }, (_, i) => i + 1);
+      
+      // Filter out already called numbers
+      const availableNumbers = allNumbers.filter(num => !calledNumbers.includes(num));
+      
+      if (availableNumbers.length === 0) {
+        // Game is over - all numbers have been called
+        await supabase
+          .from('rooms')
+          .update({ status: 'ended' })
+          .eq('id', roomId);
+        
+        setGameState("ended");
+        toast.info("Game over! All numbers have been called.");
+        return;
+      }
+      
+      // Select a random number from available numbers
+      const randomIndex = Math.floor(Math.random() * availableNumbers.length);
+      const newNumber = availableNumbers[randomIndex];
+      
+      // Add called number to database
+      const { error } = await supabase
+        .from('called_numbers')
+        .insert({
+          room_id: roomId,
+          number: newNumber
+        });
+      
+      if (error) {
+        console.error("Error calling number:", error);
+        toast.error("Failed to call number. Please try again.");
+        return;
+      }
+      
+      // Update called numbers locally
+      setLastCalledNumber(newNumber);
+      setCalledNumbers(prev => [...prev, newNumber]);
+    } catch (error) {
+      console.error("Error calling number:", error);
+      toast.error("Failed to call number. Please try again.");
     }
   };
 
   // Mark a number on a ticket
-  const markNumber = (ticketId: string, number: number) => {
-    setTickets(prev => 
-      prev.map(ticket => {
-        if (ticket.id === ticketId && !ticket.markedNumbers.includes(number)) {
-          // Check if the number exists on this ticket
-          const numberExists = ticket.numbers.some(row => 
-            row.some(cell => cell === number)
-          );
-          
-          if (numberExists) {
-            return {
-              ...ticket,
-              markedNumbers: [...ticket.markedNumbers, number],
-            };
+  const markNumber = async (ticketId: string, number: number) => {
+    try {
+      // First update local state for immediate feedback
+      setTickets(prev => 
+        prev.map(ticket => {
+          if (ticket.id === ticketId && !ticket.markedNumbers.includes(number)) {
+            // Check if the number exists on this ticket
+            const numberExists = ticket.numbers.some(row => 
+              row.some(cell => cell === number)
+            );
+            
+            if (numberExists) {
+              return {
+                ...ticket,
+                markedNumbers: [...ticket.markedNumbers, number],
+              };
+            }
           }
+          return ticket;
+        })
+      );
+      
+      // Then update database
+      if (ticketId && playerId && roomId) {
+        const { data, error } = await supabase
+          .from('tickets')
+          .select('marked_numbers')
+          .eq('id', ticketId)
+          .single();
+          
+        if (error) {
+          console.error("Error fetching ticket:", error);
+          return;
         }
-        return ticket;
-      })
-    );
+        
+        const markedNumbers = [...data.marked_numbers, number].filter((v, i, a) => a.indexOf(v) === i);
+        
+        await supabase
+          .from('tickets')
+          .update({ marked_numbers: markedNumbers })
+          .eq('id', ticketId);
+      }
+    } catch (error) {
+      console.error("Error marking number:", error);
+    }
   };
 
   // Claim a winning pattern
-  const claimPattern = (pattern: string) => {
-    if (!currentPlayer) return;
+  const claimPattern = async (pattern: string) => {
+    if (!currentPlayer || !roomId || !playerId) return;
     
-    // In a real app, we would validate the claim here
-    // For demo purposes, just add to winners list
-    
-    const existingClaim = winners.find(
-      w => w.pattern === pattern && w.player.id === currentPlayer.id
-    );
-    
-    if (!existingClaim) {
+    try {
+      // In a real app, we would validate the claim here
+      // For now, just add to winners list
+      
+      const existingClaim = winners.find(
+        w => w.pattern === pattern && w.player.id === currentPlayer.id
+      );
+      
+      if (existingClaim) {
+        toast.error("You've already claimed this pattern!");
+        return;
+      }
+      
+      // Add claim to database
+      const { error } = await supabase
+        .from('winners')
+        .insert({
+          room_id: roomId,
+          player_id: playerId,
+          pattern: pattern
+        });
+      
+      if (error) {
+        console.error("Error claiming pattern:", error);
+        toast.error("Failed to claim pattern. Please try again.");
+        return;
+      }
+      
+      // Update local state
       setWinners(prev => [...prev, { pattern, player: currentPlayer }]);
       toast.success(`Congratulations! You claimed the ${pattern} pattern.`);
-    } else {
-      toast.error("You've already claimed this pattern!");
+    } catch (error) {
+      console.error("Error claiming pattern:", error);
+      toast.error("Failed to claim pattern. Please try again.");
+    }
+  };
+
+  // Start the game
+  const startGame = async () => {
+    if (!roomId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('rooms')
+        .update({ status: 'playing' })
+        .eq('id', roomId);
+      
+      if (error) {
+        console.error("Error starting game:", error);
+        toast.error("Failed to start game. Please try again.");
+        return;
+      }
+      
+      setGameState("playing");
+    } catch (error) {
+      console.error("Error starting game:", error);
+      toast.error("Failed to start game. Please try again.");
     }
   };
 
   // Leave the current room
-  const leaveRoom = () => {
+  const leaveRoom = async () => {
+    if (roomId && playerId) {
+      try {
+        // Remove player from room
+        await supabase
+          .from('players')
+          .delete()
+          .eq('id', playerId);
+        
+        // If host leaves, delete the room
+        if (currentPlayer?.isReady && players.length <= 1) {
+          await supabase
+            .from('rooms')
+            .delete()
+            .eq('id', roomId);
+        }
+      } catch (error) {
+        console.error("Error leaving room:", error);
+      }
+    }
+    
+    // Reset all state
     setGameState("idle");
     setRoomSettings(null);
+    setRoomId(null);
+    setPlayerId(null);
     setPlayers([]);
     setCurrentPlayer(null);
     setCalledNumbers([]);

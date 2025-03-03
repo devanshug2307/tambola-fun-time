@@ -9,13 +9,202 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      called_numbers: {
+        Row: {
+          called_at: string
+          id: string
+          number: number
+          room_id: string
+        }
+        Insert: {
+          called_at?: string
+          id?: string
+          number: number
+          room_id: string
+        }
+        Update: {
+          called_at?: string
+          id?: string
+          number?: number
+          room_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "called_numbers_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      players: {
+        Row: {
+          id: string
+          is_host: boolean
+          is_ready: boolean
+          joined_at: string
+          name: string
+          room_id: string
+        }
+        Insert: {
+          id?: string
+          is_host?: boolean
+          is_ready?: boolean
+          joined_at?: string
+          name: string
+          room_id: string
+        }
+        Update: {
+          id?: string
+          is_host?: boolean
+          is_ready?: boolean
+          joined_at?: string
+          name?: string
+          room_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "players_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rooms: {
+        Row: {
+          auto_mark_enabled: boolean
+          code: string
+          created_at: string
+          host_id: string
+          host_name: string
+          id: string
+          max_players: number
+          number_call_speed: number
+          status: string
+          ticket_price: number
+          winning_patterns: Json
+        }
+        Insert: {
+          auto_mark_enabled?: boolean
+          code: string
+          created_at?: string
+          host_id: string
+          host_name: string
+          id?: string
+          max_players?: number
+          number_call_speed?: number
+          status?: string
+          ticket_price?: number
+          winning_patterns?: Json
+        }
+        Update: {
+          auto_mark_enabled?: boolean
+          code?: string
+          created_at?: string
+          host_id?: string
+          host_name?: string
+          id?: string
+          max_players?: number
+          number_call_speed?: number
+          status?: string
+          ticket_price?: number
+          winning_patterns?: Json
+        }
+        Relationships: []
+      }
+      tickets: {
+        Row: {
+          created_at: string
+          id: string
+          marked_numbers: Json
+          numbers: Json
+          player_id: string
+          room_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          marked_numbers?: Json
+          numbers: Json
+          player_id: string
+          room_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          marked_numbers?: Json
+          numbers?: Json
+          player_id?: string
+          room_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      winners: {
+        Row: {
+          claimed_at: string
+          id: string
+          pattern: string
+          player_id: string
+          room_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          id?: string
+          pattern: string
+          player_id: string
+          room_id: string
+        }
+        Update: {
+          claimed_at?: string
+          id?: string
+          pattern?: string
+          player_id?: string
+          room_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "winners_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "winners_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_room_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

@@ -35,14 +35,10 @@ const JoinRoomForm: React.FC = () => {
     
     try {
       // Join the room
-      joinRoom(roomCode, playerName);
+      await joinRoom(roomCode, playerName);
       
-      // Add a short delay to allow the context state to update
-      setTimeout(() => {
-        toast.success(`Joining room ${roomCode}`);
-        navigate("/game");
-        setIsJoining(false);
-      }, 500);
+      toast.success(`Joining room ${roomCode}`);
+      navigate("/game");
     } catch (error) {
       console.error("Error joining room:", error);
       setError("Failed to join room. Please check the room code and try again.");
