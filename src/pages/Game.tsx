@@ -62,7 +62,7 @@ const Game: React.FC = () => {
   
   // Auto-start the number calling when game state becomes "playing"
   useEffect(() => {
-    if (gameState === "playing" && !isPlaying && !callTimer) {
+    if (gameState === "playing" && !isPlaying) {
       handleStartGame();
     }
   }, [gameState]);
@@ -77,14 +77,14 @@ const Game: React.FC = () => {
         
         setTimeRemaining(seconds);
         
-        if (seconds <= 0 && callTimer) {
+        if (seconds <= 0) {
           clearInterval(timerInterval);
         }
       }, 100); // Update more frequently for smoother countdown
       
       return () => clearInterval(timerInterval);
     }
-  }, [isPlaying, nextCallTime, callTimer]);
+  }, [isPlaying, nextCallTime]);
   
   const handleStartGame = async () => {
     if (!roomSettings) return;
@@ -92,12 +92,15 @@ const Game: React.FC = () => {
     try {
       // First, update the room status to 'playing' in the database
       // This will be handled by the GameContext through realtime subscriptions
-      await supabase
-        .from('rooms')
-        .update({ status: 'playing' })
-        .eq('code', roomSettings.roomCode);
-        
-      setGameState("playing");
+      if (gameState !== "playing") {
+        await supabase
+          .from('rooms')
+          .update({ status: 'playing' })
+          .eq('code', roomSettings.roomCode);
+          
+        setGameState("playing");
+      }
+      
       setIsPlaying(true);
       
       // Call the first number immediately
@@ -105,8 +108,14 @@ const Game: React.FC = () => {
       
       // Set up the timer for calling numbers
       const speed = roomSettings.numberCallSpeed || 10;
-      setNextCallTime(Date.now() + speed * 1000);
+      const nextTime = Date.now() + speed * 1000;
+      setNextCallTime(nextTime);
       setTimeRemaining(speed);
+      
+      // Clear any existing timer to avoid multiple timers
+      if (callTimer) {
+        clearInterval(callTimer);
+      }
       
       const timer = setInterval(async () => {
         await callNumber();
@@ -114,7 +123,12 @@ const Game: React.FC = () => {
       }, speed * 1000);
       
       setCallTimer(timer);
-      toast.success("Game started! Numbers will be called automatically.");
+      
+      if (gameState === "waiting") {
+        toast.success("Game started! Numbers will be called automatically.");
+      } else {
+        toast.success("Game resumed! Numbers will continue to be called automatically.");
+      }
     } catch (error) {
       console.error("Error starting game:", error);
       toast.error("Failed to start game. Please try again.");
@@ -128,23 +142,12 @@ const Game: React.FC = () => {
       setCallTimer(null);
       setNextCallTime(null);
       setTimeRemaining(null);
+      setIsPlaying(false);
       toast.info("Game paused");
     } else {
       // Resume the game
-      const speed = roomSettings?.numberCallSpeed || 10;
-      setNextCallTime(Date.now() + speed * 1000);
-      setTimeRemaining(speed);
-      
-      const timer = setInterval(async () => {
-        await callNumber();
-        setNextCallTime(Date.now() + speed * 1000);
-      }, speed * 1000);
-      
-      setCallTimer(timer);
-      toast.success("Game resumed");
+      handleStartGame();
     }
-    
-    setIsPlaying(!isPlaying);
   };
   
   const handleLeaveGame = () => {
