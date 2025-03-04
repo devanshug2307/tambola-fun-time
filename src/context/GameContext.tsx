@@ -10,7 +10,8 @@ export type GameState =
   | "joining"
   | "waiting"
   | "playing"
-  | "ended";
+  | "ended"
+  | "paused";
 
 interface Player {
   id: string;

@@ -148,10 +148,12 @@ const Game: React.FC = () => {
       setNextCallTime(null);
       setTimeRemaining(null);
       setIsPlaying(false);
+      setGameState("paused");
       toast.info("Game paused");
     } else {
       // Resume the game
       handleStartGame();
+      setGameState("playing");
     }
   };
 
@@ -238,6 +240,11 @@ const Game: React.FC = () => {
                     Resume
                   </>
                 )}
+              </ButtonCustom>
+            ) : gameState === "paused" ? (
+              <ButtonCustom variant="primary" onClick={handleTogglePause}>
+                <Play size={16} className="mr-1" />
+                Resume
               </ButtonCustom>
             ) : (
               <ButtonCustom variant="outline" onClick={handleLeaveGame}>
