@@ -49,6 +49,7 @@ interface GameContextType {
   claimPattern: (pattern: string) => void;
   winners: { pattern: string; player: Player }[];
   leaveRoom: () => void;
+  currentPhrase: string;
 }
 
 const defaultContext: GameContextType = {
@@ -67,11 +68,105 @@ const defaultContext: GameContextType = {
   claimPattern: () => {},
   winners: [],
   leaveRoom: () => {},
+  currentPhrase: "",
 };
 
 const GameContext = createContext<GameContextType>(defaultContext);
 
 export const useGameContext = () => useContext(GameContext);
+
+const numberPhrases: { [key: number]: string } = {
+  1: "One and only – The beginning!",
+  2: "Two's company – A perfect pair.",
+  3: "Three Musketeers – All for one, one for all!",
+  4: "Four-leaf clover – A symbol of luck.",
+  5: "Five fingers – On one hand.",
+  6: "Half a dozen – Six in a set.",
+  7: "Lucky seven – Considered lucky worldwide.",
+  8: "Eight-legged freak – Like a spider!",
+  9: "Cloud nine – Feeling happy and high.",
+  10: "Perfect ten – A flawless score.",
+  11: "Make a wish – 11:11 magic.",
+  12: "Dozen – 12 eggs in a tray.",
+  13: "Unlucky for some – 13 is often feared!",
+  14: "Valentine's Day – February 14.",
+  15: "Teenager – Starts from 15.",
+  16: "Sweet sixteen – A special birthday.",
+  17: "Dancing Queen – ABBA song: 'Young and sweet, only 17.'",
+  18: "Adult now – Age of majority in some countries.",
+  19: "Last teen – 19 is the final teenage year.",
+  20: "Two dozen minus four – 20.",
+  21: "Key to the door – 21 signifies adulthood.",
+  22: "Catch-22 – A famous paradox.",
+  23: "Michael Jordan – Jersey number 23.",
+  24: "24 hours – A full day.",
+  25: "Quarter century – 25 years.",
+  26: "Republic Day – Celebrated on 26th January in India.",
+  27: "27 Club – Celebrities who died at 27.",
+  28: "February's max days – 28 days in non-leap years.",
+  29: "Leap year special – 29 appears once in four years.",
+  30: "Dirty thirty – Entering a new decade!",
+  31: "31 flavors – Baskin Robbins' ice cream varieties.",
+  32: "Chessboard squares – 32 black, 32 white.",
+  33: "Jesus' age – When he was crucified.",
+  34: "Cricket's highest over – 34 runs in an over (record).",
+  35: "Mid-thirties – A milestone age.",
+  36: "Three dozen – 36.",
+  37: "Prime number – 37 is indivisible except by 1 and itself.",
+  38: "Jackpot number – Found in many lotteries.",
+  39: "Steps to success – 39 steps, a Hitchcock film.",
+  40: "Life begins – 'Life begins at 40!'",
+  41: "Come after 40 – Just like that!",
+  42: "Answer to everything – Hitchhiker's Guide to the Galaxy.",
+  43: "George W. Bush – 43rd US President.",
+  44: "Double trouble – 44.",
+  45: "Trump was 45th US President – A political fact.",
+  46: "Less than half-century – 46 is just shy of 50.",
+  47: "AK-47 – Famous firearm.",
+  48: "Two dozen pairs – 48 items.",
+  49: "Steps to success – 49 steps!",
+  50: "Half-century – In cricket and life.",
+  51: "Area 51 – Mysterious US base.",
+  52: "Deck of cards – 52 playing cards.",
+  53: "Prime again – Another prime number.",
+  54: "Deck + 2 Jokers – A complete playing deck.",
+  55: "Speed limit – 55 mph common in many places.",
+  56: "Heinz varieties – 57 kinds of ketchup.",
+  57: "Old is gold – Nearing retirement age.",
+  58: "Atomic number of Cerium – Fun chemistry fact.",
+  59: "One short of 60 – A near milestone.",
+  60: "Full hour – 60 minutes.",
+  61: "Age for retirement – Many retire at 61.",
+  62: "62 seconds of fame – Almost a minute.",
+  63: "Old but gold – Vintage vibes.",
+  64: "64-bit computing – High-tech reference.",
+  65: "Senior citizen – Official in many countries.",
+  66: "Route 66 – Famous highway.",
+  67: "Beyond retirement – 67 and going strong.",
+  68: "Just before 69 – Almost there!",
+  69: "A number to smile at – No explanation needed!",
+  70: "Life starts anew – 70 is a new beginning.",
+  71: "Prime once again – 71 is a prime.",
+  72: "Par for golf – 72 strokes for a course.",
+  73: "Sheldon's favorite number – From Big Bang Theory.",
+  74: "One short of 75 – Almost three-quarters of a century.",
+  75: "Diamond Jubilee – 75-year celebration.",
+  76: "Spirit of 76 – American independence.",
+  77: "Double seven – Lucky number in casinos.",
+  78: "End of 70s – Time flies.",
+  79: "Last prime before 80 – A cool math fact.",
+  80: "End of an era – Entering the 80s.",
+  81: "9 squared – 81 = 9×9.",
+  82: "Beyond 80 – Living strong.",
+  83: "Prime yet again – 83 is prime.",
+  84: "Dozen sevens – 84 is 7×12.",
+  85: "Mid-80s nostalgia – 1985 vibes.",
+  86: "Radio slang for 'goodbye' – '86 that!'",
+  87: "Late 80s – Almost at the finish line.",
+  88: "Two fat ladies – Classic Tambola call.",
+  89: "Penultimate prime – Before 90.",
+  90: "Top of the house – Last number in Tambola.",
+};
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -88,6 +183,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
   );
   const [roomId, setRoomId] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
+  const [currentPhrase, setCurrentPhrase] = useState<string>("");
 
   const generateTicket = (): (number | null)[][] => {
     const ticket: (number | null)[][] = [
@@ -108,6 +204,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
       [80, 90],
     ];
 
+    const rowCounts = [0, 0, 0]; // Track numbers filled in each row
+
     for (let col = 0; col < 9; col++) {
       const numberCount = Math.floor(Math.random() * 3) + 1;
       const rowIndices = [0, 1, 2]
@@ -123,7 +221,24 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       numbers.sort((a, b) => a - b);
       for (let i = 0; i < numberCount; i++) {
-        ticket[rowIndices[i]][col] = numbers[i];
+        if (rowCounts[rowIndices[i]] < 5) {
+          // Ensure each row has at most 5 numbers
+          ticket[rowIndices[i]][col] = numbers[i];
+          rowCounts[rowIndices[i]]++;
+        }
+      }
+    }
+
+    // Ensure each row has exactly 5 numbers
+    for (let row = 0; row < 3; row++) {
+      while (rowCounts[row] < 5) {
+        const col = Math.floor(Math.random() * 9);
+        if (ticket[row][col] === null) {
+          const [min, max] = colRanges[col];
+          const num = Math.floor(Math.random() * (max - min + 1)) + min;
+          ticket[row][col] = num;
+          rowCounts[row]++;
+        }
       }
     }
 
@@ -600,6 +715,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const speakPhrase = (phrase: string) => {
+    const utterance = new SpeechSynthesisUtterance(phrase);
+    window.speechSynthesis.speak(utterance);
+  };
+
   const callNumber = async (): Promise<void> => {
     if (gameState !== "playing" || !roomId) return;
 
@@ -625,6 +745,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
       const newNumber = availableNumbers[randomIndex];
 
       console.log(`Selected number: ${newNumber}`);
+
+      // Display the corresponding phrase
+      const phrase = numberPhrases[newNumber];
+      console.log(`Phrase for number ${newNumber}: ${phrase}`);
+      setCurrentPhrase(phrase);
+      speakPhrase(phrase);
 
       const { error } = await supabase.from("called_numbers").insert({
         room_id: roomId,
@@ -806,6 +932,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         claimPattern,
         winners,
         leaveRoom,
+        currentPhrase,
       }}
     >
       {children}
