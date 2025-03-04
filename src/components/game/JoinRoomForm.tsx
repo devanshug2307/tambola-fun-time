@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -9,44 +8,48 @@ import { toast } from "sonner";
 const JoinRoomForm: React.FC = () => {
   const navigate = useNavigate();
   const { joinRoom } = useGameContext();
-  
+
   const [roomCode, setRoomCode] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [error, setError] = useState("");
   const [isJoining, setIsJoining] = useState(false);
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
+
     if (!roomCode) {
       setError("Please enter a room code");
       toast.error("Please enter a room code");
       return;
     }
-    
+
     if (!playerName) {
       setError("Please enter your name");
       toast.error("Please enter your name");
       return;
     }
-    
+
     setIsJoining(true);
-    
+
     try {
       // Join the room
       await joinRoom(roomCode, playerName);
-      
+
       toast.success(`Joining room ${roomCode}`);
       navigate("/game");
     } catch (error) {
       console.error("Error joining room:", error);
-      setError("Failed to join room. Please check the room code and try again.");
-      toast.error("Failed to join room. Please check the room code and try again.");
+      setError(
+        "Failed to join room. Please check the room code and try again."
+      );
+      toast.error(
+        "Failed to join room. Please check the room code and try again."
+      );
       setIsJoining(false);
     }
   };
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -56,19 +59,24 @@ const JoinRoomForm: React.FC = () => {
     >
       <div className="p-6 border-b border-gray-100">
         <h2 className="text-2xl font-bold text-gray-900">Join Game Room</h2>
-        <p className="text-gray-600 mt-1">Enter the room code to join an existing game</p>
+        <p className="text-gray-600 mt-1">
+          Enter the room code to join an existing game
+        </p>
       </div>
-      
+
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
             {error}
           </div>
         )}
-        
+
         <div className="space-y-4">
           <div>
-            <label htmlFor="roomCode" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="roomCode"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Room Code
             </label>
             <input
@@ -85,9 +93,12 @@ const JoinRoomForm: React.FC = () => {
               disabled={isJoining}
             />
           </div>
-          
+
           <div>
-            <label htmlFor="playerName" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="playerName"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Your Name
             </label>
             <input
@@ -104,7 +115,7 @@ const JoinRoomForm: React.FC = () => {
             />
           </div>
         </div>
-        
+
         <div className="flex justify-end space-x-4">
           <ButtonCustom
             type="button"
@@ -114,11 +125,7 @@ const JoinRoomForm: React.FC = () => {
           >
             Cancel
           </ButtonCustom>
-          <ButtonCustom
-            type="submit"
-            variant="primary"
-            disabled={isJoining}
-          >
+          <ButtonCustom type="submit" variant="primary" disabled={isJoining}>
             {isJoining ? "Joining Room..." : "Join Room"}
           </ButtonCustom>
         </div>
