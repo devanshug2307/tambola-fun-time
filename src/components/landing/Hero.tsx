@@ -8,6 +8,7 @@ const Hero: React.FC = () => {
 
   return (
     <div className="relative overflow-hidden bg-white">
+      {/* Background gradient - moved below the buttons in z-index */}
       <div className="absolute inset-0 bg-gradient-to-br from-tambola-blue/5 to-tambola-pink/5 z-0" />
 
       <div className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-4 sm:px-6 lg:px-8 py-20 text-center">
@@ -49,8 +50,9 @@ const Hero: React.FC = () => {
             Create a room, invite players, and enjoy the excitement together.
           </motion.p>
 
+          {/* Button container with increased z-index */}
           <motion.div
-            className="flex flex-col sm:flex-row gap-4 justify-center"
+            className="flex flex-col sm:flex-row gap-4 justify-center relative z-20"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.6 }}
@@ -74,8 +76,9 @@ const Hero: React.FC = () => {
           </motion.div>
         </motion.div>
 
+        {/* Grid background moved below the buttons in DOM order and reduced z-index */}
         <motion.div
-          className="absolute bottom-0 w-full max-w-6xl mx-auto opacity-10 z-0"
+          className="absolute bottom-0 w-full max-w-6xl mx-auto opacity-10 -z-10"
           initial={{ opacity: 0, y: 100 }}
           animate={{ opacity: 0.1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.8 }}

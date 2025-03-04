@@ -8,7 +8,7 @@ import NumberBoard from "@/components/game/NumberBoard";
 import { Users, ArrowLeft, Play, Pause, Clock, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { GameState } from '@/context/GameContext';
+import { GameState } from "@/context/GameContext";
 
 const Game: React.FC = () => {
   const navigate = useNavigate();
