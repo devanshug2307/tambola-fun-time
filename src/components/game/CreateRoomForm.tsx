@@ -107,12 +107,12 @@ const CreateRoomForm: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#F0F4F8] min-h-screen flex items-center justify-center p-4">
+    <div className="relative min-h-screen flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md bg-white rounded-2xl shadow-2xl border-4 border-purple-700 overflow-hidden"
+        className="relative w-full max-w-md bg-white rounded-2xl shadow-lg border-4 border-purple-700 overflow-hidden"
       >
         <div className="bg-purple-700 p-6 text-center">
           <h2 className="text-3xl font-bold text-white drop-shadow-md">
@@ -232,9 +232,7 @@ const CreateRoomForm: React.FC = () => {
           <div className="bg-gray-100 p-4 text-center">
             <p className="text-gray-700">
               Room Code:{" "}
-              <a href={joinLink} className="text-blue-500">
-                {joinLink}
-              </a>
+              <span className="font-bold text-purple-700">{joinLink}</span>
             </p>
           </div>
         )}

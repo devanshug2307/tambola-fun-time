@@ -258,9 +258,11 @@ const Game: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Game status indicator */}
         <div className="mb-6">
-          <div className="flex items-center justify-between bg-white rounded-lg shadow-sm p-4 mb-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between bg-white rounded-lg shadow-sm p-4 mb-4">
             <div className="flex items-center">
-              <span className="font-medium mr-2">Status:</span>
+              <span className="font-medium mr-2 text-sm sm:text-base">
+                Status:
+              </span>
               <span
                 className={`px-2 py-1 rounded-full text-xs font-medium ${
                   gameState === "waiting"
@@ -294,14 +296,12 @@ const Game: React.FC = () => {
               </div>
             )}
 
-            {lastCalledNumber && (
-              <div className="flex items-center">
-                <span className="text-sm mr-2">Last number called:</span>
-                <span className="w-10 h-10 flex items-center justify-center bg-indigo-600 text-white rounded-full font-bold text-lg">
-                  {lastCalledNumber}
-                </span>
-              </div>
-            )}
+            <div className="flex items-center mt-2 sm:mt-0">
+              <span className="text-sm mr-2">Last number called:</span>
+              <span className="w-10 h-10 flex items-center justify-center bg-indigo-600 text-white rounded-full font-bold text-lg">
+                {lastCalledNumber}
+              </span>
+            </div>
           </div>
         </div>
 
