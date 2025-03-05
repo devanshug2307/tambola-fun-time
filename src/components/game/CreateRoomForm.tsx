@@ -107,125 +107,139 @@ const CreateRoomForm: React.FC = () => {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden"
-    >
-      <div className="p-6 border-b border-gray-100">
-        <h2 className="text-2xl font-bold text-gray-900">Create Game Room</h2>
-        <p className="text-gray-600 mt-1">Configure your game settings</p>
-      </div>
+    <div className="bg-[#F0F4F8] min-h-screen flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md bg-white rounded-2xl shadow-2xl border-4 border-purple-700 overflow-hidden"
+      >
+        <div className="bg-purple-700 p-6 text-center">
+          <h2 className="text-3xl font-bold text-white drop-shadow-md">
+            Create Tambola Room
+          </h2>
+          <p className="text-white/80 mt-2">
+            Set up your exciting Tambola game!
+          </p>
+        </div>
 
-      <form onSubmit={handleSubmit} className="p-6 space-y-6">
-        <div className="space-y-4">
-          <div>
-            <label
-              htmlFor="numberCallSpeed"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Number Call Speed (seconds)
-            </label>
-            <input
-              type="range"
-              id="numberCallSpeed"
-              name="numberCallSpeed"
-              min="1"
-              max="30"
-              step="1"
-              value={formData.numberCallSpeed}
-              onChange={handleChange}
-              className="block w-full cursor-pointer"
-              disabled={isCreating}
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>Fast (5s)</span>
-              <span>{formData.numberCallSpeed}s</span>
-              <span>Slow (30s)</span>
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div className="space-y-4">
+            <div className="bg-gray-100 rounded-lg p-4 shadow-inner">
+              <label
+                htmlFor="numberCallSpeed"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Number Call Speed
+              </label>
+              <input
+                type="range"
+                id="numberCallSpeed"
+                name="numberCallSpeed"
+                min="1"
+                max="30"
+                step="1"
+                value={formData.numberCallSpeed}
+                onChange={handleChange}
+                className="w-full h-2 bg-purple-700/30 rounded-full appearance-none cursor-pointer"
+                disabled={isCreating}
+              />
+              <div className="flex justify-between text-xs text-gray-700 mt-2">
+                <span>Fast (5s)</span>
+                <span className="font-bold">{formData.numberCallSpeed}s</span>
+                <span>Slow (30s)</span>
+              </div>
+            </div>
+
+            <div className="flex items-center bg-gray-100 rounded-lg p-4 shadow-inner">
+              <input
+                type="checkbox"
+                id="autoMarkEnabled"
+                name="autoMarkEnabled"
+                checked={formData.autoMarkEnabled}
+                onChange={handleChange}
+                className="h-5 w-5 text-purple-700 focus:ring-purple-700 border-gray-300 rounded"
+                disabled={isCreating}
+              />
+              <label
+                htmlFor="autoMarkEnabled"
+                className="ml-3 text-sm text-gray-700"
+              >
+                Enable Auto-Daub (automatically mark numbers)
+              </label>
             </div>
           </div>
 
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="autoMarkEnabled"
-              name="autoMarkEnabled"
-              checked={formData.autoMarkEnabled}
-              onChange={handleChange}
-              className="h-4 w-4 text-tambola-blue focus:ring-tambola-blue border-gray-300 rounded"
-              disabled={isCreating}
-            />
-            <label
-              htmlFor="autoMarkEnabled"
-              className="ml-2 block text-sm text-gray-700"
-            >
-              Enable Auto-Daub (automatically mark numbers)
-            </label>
-          </div>
-        </div>
-
-        <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-3">
-            Winning Patterns
-          </h3>
-          <div className="space-y-2">
-            {[
-              { id: "earlyFive", label: "Early Five" },
-              { id: "topLine", label: "Top Line" },
-              { id: "middleLine", label: "Middle Line" },
-              { id: "bottomLine", label: "Bottom Line" },
-              { id: "fullHouse", label: "Full House" },
-            ].map((pattern) => (
-              <div key={pattern.id} className="flex items-center">
-                <input
-                  type="checkbox"
-                  id={pattern.id}
-                  name={pattern.id}
-                  checked={
-                    formData.winningPatterns[
-                      pattern.id as keyof typeof formData.winningPatterns
-                    ]
-                  }
-                  onChange={handlePatternChange}
-                  className="h-4 w-4 text-tambola-blue focus:ring-tambola-blue border-gray-300 rounded"
-                  disabled={isCreating}
-                />
-                <label
-                  htmlFor={pattern.id}
-                  className="ml-2 block text-sm text-gray-700"
+          <div>
+            <h3 className="text-lg font-semibold text-gray-700 mb-4">
+              Winning Patterns
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { id: "earlyFive", label: "Early Five" },
+                { id: "topLine", label: "Top Line" },
+                { id: "middleLine", label: "Middle Line" },
+                { id: "bottomLine", label: "Bottom Line" },
+                { id: "fullHouse", label: "Full House" },
+              ].map((pattern) => (
+                <div
+                  key={pattern.id}
+                  className="flex items-center bg-gray-100 rounded-lg p-3 shadow-inner"
                 >
-                  {pattern.label}
-                </label>
-              </div>
-            ))}
+                  <input
+                    type="checkbox"
+                    id={pattern.id}
+                    name={pattern.id}
+                    checked={
+                      formData.winningPatterns[
+                        pattern.id as keyof typeof formData.winningPatterns
+                      ]
+                    }
+                    onChange={handlePatternChange}
+                    className="h-5 w-5 text-purple-700 focus:ring-purple-700 border-gray-300 rounded"
+                    disabled={isCreating}
+                  />
+                  <label
+                    htmlFor={pattern.id}
+                    className="ml-3 text-sm text-gray-700"
+                  >
+                    {pattern.label}
+                  </label>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <div className="flex justify-end space-x-4">
-          <ButtonCustom
-            type="button"
-            variant="outline"
-            onClick={() => navigate("/")}
-            disabled={isCreating}
-          >
-            Cancel
-          </ButtonCustom>
-          <ButtonCustom type="submit" variant="primary" disabled={isCreating}>
-            {isCreating ? "Creating Room..." : "Create Room"}
-          </ButtonCustom>
-        </div>
-      </form>
+          <div className="flex justify-between space-x-4">
+            <button
+              type="button"
+              className="w-full px-4 py-2 text-purple-700 border border-purple-700 rounded-lg hover:bg-purple-50 transition-colors"
+              disabled={isCreating}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="w-full px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800 transition-colors"
+              disabled={isCreating}
+            >
+              {isCreating ? "Creating Room..." : "Create Room"}
+            </button>
+          </div>
+        </form>
 
-      {joinLink && (
-        <p className="mt-4">
-          Join link:{" "}
-          <a href={joinLink} className="text-blue-500">
-            {joinLink}
-          </a>
-        </p>
-      )}
-    </motion.div>
+        {joinLink && (
+          <div className="bg-gray-100 p-4 text-center">
+            <p className="text-gray-700">
+              Room Code:{" "}
+              <a href={joinLink} className="text-blue-500">
+                {joinLink}
+              </a>
+            </p>
+          </div>
+        )}
+      </motion.div>
+    </div>
   );
 };
 
