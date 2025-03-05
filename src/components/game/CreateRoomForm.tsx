@@ -122,49 +122,6 @@ const CreateRoomForm: React.FC = () => {
         <div className="space-y-4">
           <div>
             <label
-              htmlFor="maxPlayers"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Maximum Players
-            </label>
-            <select
-              id="maxPlayers"
-              name="maxPlayers"
-              value={formData.maxPlayers}
-              onChange={handleChange}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-tambola-blue focus:border-tambola-blue"
-              disabled={isCreating}
-            >
-              {[5, 10, 15, 20, 30, 50].map((num) => (
-                <option key={num} value={num}>
-                  {num} players
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label
-              htmlFor="ticketPrice"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Ticket Price (virtual coins)
-            </label>
-            <input
-              type="number"
-              id="ticketPrice"
-              name="ticketPrice"
-              min="0"
-              max="100"
-              value={formData.ticketPrice}
-              onChange={handleChange}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-tambola-blue focus:border-tambola-blue"
-              disabled={isCreating}
-            />
-          </div>
-
-          <div>
-            <label
               htmlFor="numberCallSpeed"
               className="block text-sm font-medium text-gray-700 mb-1"
             >

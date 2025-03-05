@@ -27,8 +27,6 @@ interface Ticket {
 
 interface RoomSettings {
   roomCode: string;
-  maxPlayers: number;
-  ticketPrice: number;
   numberCallSpeed: number;
   winningPatterns: string[];
   autoMarkEnabled: boolean;
@@ -279,8 +277,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
             const roomData = payload.new as any;
             setRoomSettings({
               roomCode: roomData.code,
-              maxPlayers: roomData.max_players,
-              ticketPrice: roomData.ticket_price,
               numberCallSpeed: roomData.number_call_speed,
               winningPatterns: roomData.winning_patterns || [],
               autoMarkEnabled: roomData.auto_mark_enabled,
@@ -452,8 +448,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
           code: settings.roomCode || (await getUniqueRoomCode()),
           host_name: "Host",
           host_id: hostId,
-          max_players: settings.maxPlayers || 10,
-          ticket_price: settings.ticketPrice || 5,
           number_call_speed: settings.numberCallSpeed || 10,
           auto_mark_enabled: settings.autoMarkEnabled ?? false,
           winning_patterns: winningPatterns as unknown as Json,
@@ -472,8 +466,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
       setRoomId(roomData.id);
       setRoomSettings({
         roomCode: roomData.code,
-        maxPlayers: roomData.max_players,
-        ticketPrice: roomData.ticket_price,
         numberCallSpeed: roomData.number_call_speed,
         winningPatterns: Array.isArray(roomData.winning_patterns)
           ? (roomData.winning_patterns as string[])
@@ -597,8 +589,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
       setRoomId(roomData.id);
       setRoomSettings({
         roomCode: roomData.code,
-        maxPlayers: roomData.max_players,
-        ticketPrice: roomData.ticket_price,
         numberCallSpeed: roomData.number_call_speed,
         winningPatterns: Array.isArray(roomData.winning_patterns)
           ? (roomData.winning_patterns as string[])
@@ -860,6 +850,19 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
       if (existingClaim) {
         toast.error("You've already claimed this pattern!");
         return;
+      }
+
+      // Check if the player has marked all numbers for Full House
+      if (pattern === "Full House") {
+        const ticket = tickets.find(
+          (t) =>
+            t.markedNumbers.length > 0 &&
+            t.markedNumbers.length === t.numbers.length
+        );
+        if (!ticket) {
+          toast.error("You need to mark all numbers to claim Full House.");
+          return;
+        }
       }
 
       const { error } = await supabase.from("winners").insert({

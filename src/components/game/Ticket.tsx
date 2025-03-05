@@ -18,6 +18,7 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
     playerName,
     leaderboard,
     players,
+    winners,
   } = useGameContext();
   const [animatingCell, setAnimatingCell] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -40,6 +41,11 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
   const handleClaimPattern = (pattern: string) => {
     const markedCount = ticket.markedNumbers.length;
     const totalNumbers = ticket.numbers.length;
+    const isPatternClaimed = winners.some((w) => w.pattern === pattern);
+    if (isPatternClaimed) {
+      setMessage("This prize has already been claimed by another user.");
+      return;
+    }
     if (pattern === "Early Five" && markedCount === 5) {
       claimPattern(pattern);
     } else if (pattern === "Early Five") {
@@ -174,7 +180,9 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
         </div>
       </div>
 
-      <Leaderboard leaderboard={leaderboard} players={players} />
+      <div className="mt-6">
+        <Leaderboard leaderboard={leaderboard} players={players} />
+      </div>
     </div>
   );
 };
