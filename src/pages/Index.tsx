@@ -1,3 +1,4 @@
+
 import React from "react";
 import { motion } from "framer-motion";
 import Hero from "@/components/landing/Hero";
@@ -11,7 +12,7 @@ const Index: React.FC = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="min-h-screen bg-white"
+        className="min-h-screen bg-white overflow-hidden"
       >
         <Hero />
         <FeatureSection />
