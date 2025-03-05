@@ -10,6 +10,7 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
   const { tickets, markNumber, calledNumbers, roomSettings, claimPattern } =
     useGameContext();
   const [animatingCell, setAnimatingCell] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   const ticket = tickets.find((t) => t.id === ticketId);
 
@@ -27,11 +28,35 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
   };
 
   const handleClaimPattern = (pattern: string) => {
-    claimPattern(pattern);
+    const markedCount = ticket.markedNumbers.length;
+    const totalNumbers = ticket.numbers.length;
+    if (pattern === "Early Five" && markedCount === 5) {
+      claimPattern(pattern);
+    } else if (pattern === "Early Five") {
+      setMessage("You need to mark exactly 5 numbers to claim Early 5.");
+    } else if (pattern === "Full House" && markedCount === totalNumbers) {
+      claimPattern(pattern);
+    } else if (pattern === "Full House") {
+      setMessage("You need to mark all numbers to claim Full House.");
+    } else {
+      claimPattern(pattern);
+    }
   };
+
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
 
   return (
     <div className="tambola-ticket max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden">
+      {message && (
+        <div className="bg-red-500 text-white p-2 rounded-md mb-4">
+          {message}
+        </div>
+      )}
       <div className="p-4 border-b border-gray-100">
         <h3 className="text-lg font-semibold text-gray-900">Your Ticket</h3>
       </div>

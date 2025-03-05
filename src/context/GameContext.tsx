@@ -722,7 +722,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const callNumber = async (): Promise<void> => {
-    if (gameState !== "playing" || !roomId || currentPlayer?.isReady === false) return;
+    if (gameState !== "playing" || !roomId || currentPlayer?.isReady === false)
+      return;
 
     try {
       console.log("Calling a number...");
