@@ -1,16 +1,14 @@
-
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ButtonCustom } from "@/components/ui/button-custom";
 import { useGameContext } from "@/context/GameContext";
 import Ticket from "@/components/game/Ticket";
 import NumberBoard from "@/components/game/NumberBoard";
-import GameHeader from "@/components/game/GameHeader";
-import GameStatusBar from "@/components/game/GameStatusBar";
-import CurrentNumberDisplay from "@/components/game/CurrentNumberDisplay";
-import { supabase } from "@/integrations/supabase/client";
+import { Users, ArrowLeft, Play, Pause, Clock, Trophy } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { GameState } from "@/context/GameContext";
 import tickingSound from "@/assets/sounds/ticking-clock_1-27477.mp3";
 
 const Game: React.FC = () => {
@@ -34,20 +32,22 @@ const Game: React.FC = () => {
   let isSoundPlaying = false;
 
   const playTickingSound = () => {
-    if (isSoundPlaying) return;
+    if (isSoundPlaying) return; // Prevent playing if already playing
     isSoundPlaying = true;
     const audio = new Audio(tickingSound);
     audio.play();
     setTimeout(() => {
       audio.pause();
-      audio.currentTime = 0;
-      isSoundPlaying = false;
-    }, 1000);
+      audio.currentTime = 0; // Reset to start
+      isSoundPlaying = false; // Reset the flag
+    }, 1000); // Stop after 1 second
   };
 
+  // Redirect if no room settings (means we're not in a valid game)
   useEffect(() => {
+    // Small delay to let context hydrate
     const checkGameState = setTimeout(() => {
-      if (!roomSettings && (gameState === "waiting" || gameState === "ended")) {
+      if (!roomSettings && (gameState === "idle" || gameState === "ended")) {
         toast.error("No active game session. Please create or join a game.");
         navigate("/");
       }
@@ -56,14 +56,17 @@ const Game: React.FC = () => {
     return () => clearTimeout(checkGameState);
   }, [roomSettings, gameState, navigate]);
 
+  // Set up timer cleanup
   useEffect(() => {
     return () => {
       if (callTimer) clearInterval(callTimer);
     };
   }, [callTimer]);
 
+  // Monitor game progress
   useEffect(() => {
     if (gameState === "playing" && calledNumbers.length >= 90) {
+      // All numbers have been called
       if (callTimer) clearInterval(callTimer);
       setIsPlaying(false);
       setGameState("ended");
@@ -71,12 +74,14 @@ const Game: React.FC = () => {
     }
   }, [calledNumbers, gameState, setGameState]);
 
+  // Auto-start the number calling when game state becomes "playing"
   useEffect(() => {
     if (gameState === "playing" && !isPlaying) {
       handleStartGame();
     }
   }, [gameState, isPlaying]);
 
+  // Timer countdown effect
   useEffect(() => {
     if (isPlaying && nextCallTime) {
       const timerInterval = setInterval(() => {
@@ -86,6 +91,7 @@ const Game: React.FC = () => {
 
         setTimeRemaining(seconds);
 
+        // Play ticking sound every second except the last second
         if (seconds > 1 && seconds < 10) {
           playTickingSound();
         }
@@ -93,7 +99,7 @@ const Game: React.FC = () => {
         if (seconds <= 0) {
           clearInterval(timerInterval);
         }
-      }, 100);
+      }, 100); // Update more frequently for smoother countdown
 
       return () => clearInterval(timerInterval);
     }
@@ -103,23 +109,31 @@ const Game: React.FC = () => {
     if (!roomSettings) return;
 
     try {
-      if (gameState === "playing") {
-        setIsPlaying(true);
-        await callNumber();
-      } else if (gameState === "waiting" || gameState === "paused") {
-        await supabase
-          .from("rooms")
-          .update({ status: "playing" })
-          .eq("code", roomSettings.roomCode);
-        setGameState("playing");
-        return;
+      switch (gameState) {
+        case "playing":
+          // This part should only run after gameState is "playing"
+          setIsPlaying(true);
+          await callNumber();
+          break;
+        case "waiting":
+          await supabase
+            .from("rooms")
+            .update({ status: "playing" })
+            .eq("code", roomSettings.roomCode);
+          setGameState("playing");
+          // Return early to let the effect trigger again with the updated state
+          return;
+        default:
+          return;
       }
 
+      // Set up the timer for calling numbers
       const speed = roomSettings.numberCallSpeed || 10;
       const nextTime = Date.now() + speed * 1000;
       setNextCallTime(nextTime);
       setTimeRemaining(speed);
 
+      // Clear any existing timer to avoid multiple timers
       if (callTimer) {
         clearInterval(callTimer);
       }
@@ -127,12 +141,13 @@ const Game: React.FC = () => {
       const timer = setInterval(async () => {
         await callNumber();
         setNextCallTime(Date.now() + speed * 1000);
-        playTickingSound();
+        playTickingSound(); // Play sound on each number call
       }, speed * 1000);
 
       setCallTimer(timer);
 
-      if (gameState === "waiting" || gameState === "paused") {
+      // Toast messages
+      if (gameState === "waiting") {
         toast.success("Game started! Numbers will be called automatically.");
       } else {
         toast.success(
@@ -147,6 +162,7 @@ const Game: React.FC = () => {
 
   const handleTogglePause = () => {
     if (isPlaying) {
+      // Pause the game
       if (callTimer) clearInterval(callTimer);
       setCallTimer(null);
       setNextCallTime(null);
@@ -155,6 +171,7 @@ const Game: React.FC = () => {
       setGameState("paused");
       toast.info("Game paused");
     } else {
+      // Resume the game
       handleStartGame();
       setGameState("playing");
     }
@@ -166,99 +183,189 @@ const Game: React.FC = () => {
     navigate("/");
   };
 
+  // Add debug information to help diagnose issues
+  console.log("Game component state:", {
+    gameState,
+    isPlaying,
+    callTimer: !!callTimer,
+    roomSettings,
+    players,
+    tickets,
+    calledNumbers,
+    lastCalledNumber,
+    timeRemaining,
+  });
+
+  // Show loading state while context initializes
   if (gameState === "creating" || gameState === "joining") {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-pink-50 flex items-center justify-center">
-        <motion.div 
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="text-center bg-white p-8 rounded-2xl shadow-xl"
-        >
-          <div className="flex justify-center mb-6">
-            <div className="relative w-20 h-20">
-              <motion.div 
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                className="absolute inset-0 rounded-full border-4 border-indigo-600 border-t-transparent"
-              />
-            </div>
-          </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-medium text-gray-700">
             {gameState === "creating"
               ? "Creating your game room..."
               : "Joining the game room..."}
           </h2>
-          <p className="text-gray-500">
-            Please wait while we set up the game for you
-          </p>
-        </motion.div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50">
-      <GameHeader 
-        roomCode={roomSettings?.roomCode}
-        playerCount={players.length}
-        gameState={gameState}
-        isPlaying={isPlaying}
-        onStartGame={handleStartGame}
-        onTogglePause={handleTogglePause}
-        onLeaveGame={handleLeaveGame}
-      />
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <div className="flex items-center">
+            <button
+              onClick={handleLeaveGame}
+              className="mr-4 text-gray-500 hover:text-gray-700 transition-colors"
+              aria-label="Leave game"
+            >
+              <ArrowLeft size={20} />
+            </button>
 
-      <main className="px-4 sm:px-6 lg:px-8 py-4 max-w-7xl mx-auto">
-        <GameStatusBar 
-          gameState={gameState}
-          isPlaying={isPlaying}
-          timeRemaining={timeRemaining}
-          lastCalledNumber={calledNumbers.length > 1 ? calledNumbers[calledNumbers.length - 2] : null}
-          winningPatterns={roomSettings?.winningPatterns || []}
-        />
+            <h1 className="text-xl font-bold text-gray-900">
+              {roomSettings?.roomCode && (
+                <span className="text-gray-500 mr-2">Room: </span>
+              )}
+              {roomSettings?.roomCode || "Tambola Game"}
+            </h1>
+          </div>
 
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <AnimatePresence>
-            <motion.div 
-              key="number-board"
+          <div className="flex items-center gap-4">
+            <div className="flex items-center text-sm text-gray-600">
+              <Users size={16} className="mr-1" />
+              <span>{players.length} players</span>
+            </div>
+
+            {gameState === "waiting" ? (
+              <ButtonCustom variant="primary" onClick={handleStartGame}>
+                <Play size={16} className="mr-1" />
+                Start Game
+              </ButtonCustom>
+            ) : gameState === "playing" ? (
+              <ButtonCustom
+                variant={isPlaying ? "secondary" : "primary"}
+                onClick={handleTogglePause}
+              >
+                {isPlaying ? (
+                  <>
+                    <Pause size={16} className="mr-1" />
+                    Pause
+                  </>
+                ) : (
+                  <>
+                    <Play size={16} className="mr-1" />
+                    Resume
+                  </>
+                )}
+              </ButtonCustom>
+            ) : gameState === "paused" ? (
+              <ButtonCustom variant="primary" onClick={handleTogglePause}>
+                <Play size={16} className="mr-1" />
+                Resume
+              </ButtonCustom>
+            ) : (
+              <ButtonCustom variant="outline" onClick={handleLeaveGame}>
+                Exit Game
+              </ButtonCustom>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Game status indicator */}
+        <div className="mb-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between bg-white rounded-lg shadow-sm p-4 mb-4">
+            <div className="flex items-center">
+              <span className="font-medium mr-2 text-sm sm:text-base">
+                Status:
+              </span>
+              <span
+                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  gameState === "waiting"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : gameState === "playing"
+                    ? "bg-green-100 text-green-800"
+                    : gameState === "ended"
+                    ? "bg-gray-100 text-gray-800"
+                    : "bg-blue-100 text-blue-800"
+                }`}
+              >
+                {gameState === "waiting"
+                  ? "Waiting to Start"
+                  : gameState === "playing"
+                  ? isPlaying
+                    ? "In Progress"
+                    : "Paused"
+                  : gameState === "ended"
+                  ? "Game Ended"
+                  : "Setting Up"}
+              </span>
+            </div>
+
+            {gameState === "playing" && isPlaying && timeRemaining !== null && (
+              <div className="flex items-center text-sm">
+                <Clock size={16} className="mr-1 text-gray-500" />
+                <span>
+                  Next number in:{" "}
+                  <span className="font-medium">{timeRemaining}s</span>
+                </span>
+              </div>
+            )}
+
+            <div className="flex items-center mt-2 sm:mt-0">
+              <span className="text-sm mr-2">Last number called:</span>
+              <span className="w-10 h-10 flex items-center justify-center bg-indigo-600 text-white rounded-full font-bold text-lg">
+                {calledNumbers.length > 1
+                  ? calledNumbers[calledNumbers.length - 2]
+                  : "N/A"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-7">
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="lg:col-span-7"
             >
-              <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-                <div className="p-4 border-b border-gray-100">
-                  <CurrentNumberDisplay 
-                    currentNumber={lastCalledNumber} 
-                    isPlaying={isPlaying && gameState === "playing"}
-                  />
-                </div>
-                <div className="p-4">
-                  <NumberBoard />
-                </div>
-              </div>
+              <NumberBoard />
             </motion.div>
+          </div>
 
-            <motion.div 
-              key="ticket-section"
+          <div className="lg:col-span-5">
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="lg:col-span-5 space-y-6"
+              className="space-y-6"
             >
+              {/* Player information */}
+              <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+                <h2 className="text-lg font-medium mb-2 flex items-center">
+                  <Trophy size={18} className="mr-2 text-amber-500" />
+                  Winning Patterns
+                </h2>
+                <div className="grid grid-cols-2 gap-2">
+                  {roomSettings?.winningPatterns.map((pattern, index) => (
+                    <div key={index} className="text-sm bg-gray-50 rounded p-2">
+                      {pattern}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Player tickets */}
               {tickets.map((ticket) => (
-                <motion.div
-                  key={ticket.id}
-                  initial={{ scale: 0.95, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Ticket ticketId={ticket.id} />
-                </motion.div>
+                <Ticket key={ticket.id} ticketId={ticket.id} />
               ))}
             </motion.div>
-          </AnimatePresence>
+          </div>
         </div>
       </main>
     </div>
