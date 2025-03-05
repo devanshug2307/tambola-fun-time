@@ -1,8 +1,7 @@
-
 import React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Users, Trophy, Dice, Play, Home } from "lucide-react";
+import { Users, Trophy, Play, Home, Dices } from "lucide-react";
 
 const Hero: React.FC = () => {
   const navigate = useNavigate();
@@ -70,7 +69,6 @@ const Hero: React.FC = () => {
 
   return (
     <div className="relative overflow-hidden min-h-screen bg-gradient-to-br from-purple-700 via-purple-600 to-pink-500">
-      {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
           initial={{ opacity: 0, x: -100, y: -100 }}
@@ -92,7 +90,6 @@ const Hero: React.FC = () => {
         />
       </div>
 
-      {/* Dice and Game Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
           variants={floatingVariants}
@@ -152,7 +149,6 @@ const Hero: React.FC = () => {
           initial="hidden"
           animate="visible"
         >
-          {/* Top Navigation */}
           <motion.div 
             variants={itemVariants}
             className="flex justify-between items-center mb-4 px-4"
@@ -173,12 +169,10 @@ const Hero: React.FC = () => {
             </motion.div>
           </motion.div>
 
-          {/* Main Game Card */}
           <motion.div
             variants={itemVariants}
             className="bg-white/10 backdrop-blur-md rounded-3xl overflow-hidden shadow-2xl border border-white/20 p-8 mb-12"
           >
-            {/* Hero Title */}
             <motion.div
               initial={{ y: -50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -195,7 +189,6 @@ const Hero: React.FC = () => {
               </p>
             </motion.div>
 
-            {/* Stats Cards */}
             <motion.div
               variants={itemVariants}
               className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
@@ -226,7 +219,7 @@ const Hero: React.FC = () => {
                   animate="pulse"
                   className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center mb-4 shadow-xl"
                 >
-                  <Dice className="w-8 h-8 text-white" />
+                  <Dices className="w-8 h-8 text-white" />
                 </motion.div>
                 <h3 className="text-white text-3xl font-bold mb-1">500+</h3>
                 <p className="text-white/70 text-center">Games Played</p>
@@ -249,7 +242,6 @@ const Hero: React.FC = () => {
               </motion.div>
             </motion.div>
 
-            {/* Main CTA Buttons */}
             <motion.div
               variants={itemVariants}
               className="flex flex-col sm:flex-row gap-6 justify-center max-w-xl mx-auto"
@@ -294,7 +286,6 @@ const Hero: React.FC = () => {
             </motion.div>
           </motion.div>
 
-          {/* Feature Mini Cards */}
           <motion.div
             variants={containerVariants}
             className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12"
@@ -317,7 +308,6 @@ const Hero: React.FC = () => {
             ))}
           </motion.div>
 
-          {/* Footer */}
           <motion.div 
             variants={itemVariants}
             className="text-center text-white/60 text-sm mt-8"

@@ -32,20 +32,18 @@ const Game: React.FC = () => {
   let isSoundPlaying = false;
 
   const playTickingSound = () => {
-    if (isSoundPlaying) return; // Prevent playing if already playing
+    if (isSoundPlaying) return;
     isSoundPlaying = true;
     const audio = new Audio(tickingSound);
     audio.play();
     setTimeout(() => {
       audio.pause();
-      audio.currentTime = 0; // Reset to start
-      isSoundPlaying = false; // Reset the flag
-    }, 1000); // Stop after 1 second
+      audio.currentTime = 0;
+      isSoundPlaying = false;
+    }, 1000);
   };
 
-  // Redirect if no room settings (means we're not in a valid game)
   useEffect(() => {
-    // Small delay to let context hydrate
     const checkGameState = setTimeout(() => {
       if (!roomSettings && (gameState === "idle" || gameState === "ended")) {
         toast.error("No active game session. Please create or join a game.");
@@ -56,17 +54,14 @@ const Game: React.FC = () => {
     return () => clearTimeout(checkGameState);
   }, [roomSettings, gameState, navigate]);
 
-  // Set up timer cleanup
   useEffect(() => {
     return () => {
       if (callTimer) clearInterval(callTimer);
     };
   }, [callTimer]);
 
-  // Monitor game progress
   useEffect(() => {
     if (gameState === "playing" && calledNumbers.length >= 90) {
-      // All numbers have been called
       if (callTimer) clearInterval(callTimer);
       setIsPlaying(false);
       setGameState("ended");
@@ -74,14 +69,12 @@ const Game: React.FC = () => {
     }
   }, [calledNumbers, gameState, setGameState]);
 
-  // Auto-start the number calling when game state becomes "playing"
   useEffect(() => {
     if (gameState === "playing" && !isPlaying) {
       handleStartGame();
     }
   }, [gameState, isPlaying]);
 
-  // Timer countdown effect
   useEffect(() => {
     if (isPlaying && nextCallTime) {
       const timerInterval = setInterval(() => {
@@ -91,7 +84,6 @@ const Game: React.FC = () => {
 
         setTimeRemaining(seconds);
 
-        // Play ticking sound every second except the last second
         if (seconds > 1 && seconds < 10) {
           playTickingSound();
         }
@@ -99,7 +91,7 @@ const Game: React.FC = () => {
         if (seconds <= 0) {
           clearInterval(timerInterval);
         }
-      }, 100); // Update more frequently for smoother countdown
+      }, 100);
 
       return () => clearInterval(timerInterval);
     }
@@ -109,31 +101,23 @@ const Game: React.FC = () => {
     if (!roomSettings) return;
 
     try {
-      switch (gameState) {
-        case "playing":
-          // This part should only run after gameState is "playing"
-          setIsPlaying(true);
-          await callNumber();
-          break;
-        case "waiting":
-          await supabase
-            .from("rooms")
-            .update({ status: "playing" })
-            .eq("code", roomSettings.roomCode);
-          setGameState("playing");
-          // Return early to let the effect trigger again with the updated state
-          return;
-        default:
-          return;
+      if (gameState === "playing") {
+        setIsPlaying(true);
+        await callNumber();
+      } else if (gameState === "waiting") {
+        await supabase
+          .from("rooms")
+          .update({ status: "playing" })
+          .eq("code", roomSettings.roomCode);
+        setGameState("playing");
+        return;
       }
 
-      // Set up the timer for calling numbers
       const speed = roomSettings.numberCallSpeed || 10;
       const nextTime = Date.now() + speed * 1000;
       setNextCallTime(nextTime);
       setTimeRemaining(speed);
 
-      // Clear any existing timer to avoid multiple timers
       if (callTimer) {
         clearInterval(callTimer);
       }
@@ -141,12 +125,11 @@ const Game: React.FC = () => {
       const timer = setInterval(async () => {
         await callNumber();
         setNextCallTime(Date.now() + speed * 1000);
-        playTickingSound(); // Play sound on each number call
+        playTickingSound();
       }, speed * 1000);
 
       setCallTimer(timer);
 
-      // Toast messages
       if (gameState === "waiting") {
         toast.success("Game started! Numbers will be called automatically.");
       } else {
@@ -162,7 +145,6 @@ const Game: React.FC = () => {
 
   const handleTogglePause = () => {
     if (isPlaying) {
-      // Pause the game
       if (callTimer) clearInterval(callTimer);
       setCallTimer(null);
       setNextCallTime(null);
@@ -171,7 +153,6 @@ const Game: React.FC = () => {
       setGameState("paused");
       toast.info("Game paused");
     } else {
-      // Resume the game
       handleStartGame();
       setGameState("playing");
     }
@@ -183,7 +164,6 @@ const Game: React.FC = () => {
     navigate("/");
   };
 
-  // Add debug information to help diagnose issues
   console.log("Game component state:", {
     gameState,
     isPlaying,
@@ -196,7 +176,6 @@ const Game: React.FC = () => {
     timeRemaining,
   });
 
-  // Show loading state while context initializes
   if (gameState === "creating" || gameState === "joining") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -276,7 +255,6 @@ const Game: React.FC = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Game status indicator */}
         <div className="mb-6">
           <div className="flex flex-col sm:flex-row items-center justify-between bg-white rounded-lg shadow-sm p-4 mb-4">
             <div className="flex items-center">
@@ -345,7 +323,6 @@ const Game: React.FC = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="space-y-6"
             >
-              {/* Player information */}
               <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
                 <h2 className="text-lg font-medium mb-2 flex items-center">
                   <Trophy size={18} className="mr-2 text-amber-500" />
@@ -360,7 +337,6 @@ const Game: React.FC = () => {
                 </div>
               </div>
 
-              {/* Player tickets */}
               {tickets.map((ticket) => (
                 <Ticket key={ticket.id} ticketId={ticket.id} />
               ))}

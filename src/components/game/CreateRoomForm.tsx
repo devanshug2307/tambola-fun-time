@@ -89,7 +89,6 @@ const CreateRoomForm: React.FC = () => {
 
     try {
       const roomCode = await createRoom({
-        maxPlayers: formData.maxPlayers,
         ticketPrice: formData.ticketPrice,
         numberCallSpeed: formData.numberCallSpeed,
         autoMarkEnabled: formData.autoMarkEnabled,
