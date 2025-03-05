@@ -1,3 +1,7 @@
 {
-  "rewrites": [{ "source": "/join/:path*", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/join/:path*", "destination": "/index.html" },
+    { "source": "/create-room", "destination": "/index.html" },
+    { "source": "/join-room", "destination": "/index.html" }
+  ]
 }
