@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGameContext } from "@/context/GameContext";
@@ -20,79 +21,98 @@ const NumberBoard: React.FC = () => {
     }
   }, [lastCalledNumber]);
 
+  // Group numbers in tens for better visual organization
+  const numberGroups = [
+    allNumbers.slice(0, 10),   // 1-10
+    allNumbers.slice(10, 20),  // 11-20
+    allNumbers.slice(20, 30),  // 21-30
+    allNumbers.slice(30, 40),  // 31-40
+    allNumbers.slice(40, 50),  // 41-50
+    allNumbers.slice(50, 60),  // 51-60
+    allNumbers.slice(60, 70),  // 61-70
+    allNumbers.slice(70, 80),  // 71-80
+    allNumbers.slice(80, 90)   // 81-90
+  ];
+  
+  const getNumberColor = (num: number) => {
+    // Different color ranges based on number groups
+    if (num <= 10) return "from-blue-400 to-blue-600"; 
+    if (num <= 20) return "from-indigo-400 to-indigo-600";
+    if (num <= 30) return "from-purple-400 to-purple-600";
+    if (num <= 40) return "from-fuchsia-400 to-fuchsia-600";
+    if (num <= 50) return "from-pink-400 to-pink-600";
+    if (num <= 60) return "from-rose-400 to-rose-600";
+    if (num <= 70) return "from-red-400 to-red-600";
+    if (num <= 80) return "from-orange-400 to-orange-600";
+    return "from-amber-400 to-amber-600";
+  };
+
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      <div className="mb-8 text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Number Board</h2>
+    <div className="w-full">
+      <h2 className="text-xl font-bold text-gray-700 mb-4 text-center">Number Board</h2>
+      
+      <div className="space-y-4">
+        {numberGroups.map((group, groupIndex) => (
+          <div key={`group-${groupIndex}`} className="bg-gray-50 rounded-xl p-2">
+            <div className="grid grid-cols-10 gap-2">
+              {group.map((num) => {
+                const isCalled = calledNumbers.includes(num);
+                const isLastCalled = num === lastCalledNumber;
+                const bgGradient = getNumberColor(num);
 
-        <AnimatePresence mode="wait">
-          {lastCalledNumber && (
-            <motion.div
-              key={lastCalledNumber}
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              className="relative"
-            >
-              <div className="w-24 h-24 flex items-center justify-center bg-pink-500 text-white rounded-full font-bold text-4xl mx-auto shadow-lg">
-                {lastCalledNumber}
-              </div>
-              <div className="text-sm text-gray-500 mt-2">Current Number</div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      <div className="grid grid-cols-10 gap-2">
-        {allNumbers.map((num) => {
-          const isCalled = calledNumbers.includes(num);
-          const isLastCalled = num === lastCalledNumber;
-
-          return (
-            <motion.div
-              key={num}
-              className={`w-full aspect-square flex items-center justify-center rounded-md text-lg font-medium border ${
-                isCalled
-                  ? "bg-pink-500 text-white border-pink-600"
-                  : "bg-white text-gray-700 border-gray-200"
-              }`}
-              animate={
-                isLastCalled && animating
-                  ? {
-                      scale: [1, 1.2, 1],
-                      backgroundColor: [
-                        "rgb(219, 39, 119)",
-                        "rgb(236, 72, 153)",
-                        "rgb(219, 39, 119)",
-                      ],
-                      boxShadow: [
-                        "0 0 0 rgba(236, 72, 153, 0)",
-                        "0 0 15px rgba(236, 72, 153, 0.7)",
-                        "0 0 0 rgba(236, 72, 153, 0)",
-                      ],
+                return (
+                  <motion.div
+                    key={`num-${num}`}
+                    className={`aspect-square flex items-center justify-center rounded-md text-base font-medium
+                      ${isCalled 
+                        ? `bg-gradient-to-br ${bgGradient} text-white shadow-md`
+                        : 'bg-white text-gray-700 border border-gray-200'
+                      }
+                    `}
+                    whileHover={{ scale: 1.05 }}
+                    animate={
+                      isLastCalled && animating
+                        ? {
+                            scale: [1, 1.2, 1],
+                            boxShadow: [
+                              "0 0 0 rgba(236, 72, 153, 0)",
+                              "0 0 20px rgba(236, 72, 153, 0.7)",
+                              "0 0 0 rgba(236, 72, 153, 0)",
+                            ],
+                          }
+                        : {}
                     }
-                  : {}
-              }
-              transition={{ duration: 1.5, repeat: 0 }}
-            >
-              {num}
-            </motion.div>
-          );
-        })}
+                    transition={{ duration: 1.5 }}
+                  >
+                    {isLastCalled && animating ? (
+                      <motion.span
+                        animate={{ 
+                          scale: [1, 1.2, 1],
+                          opacity: [1, 0.8, 1] 
+                        }}
+                        transition={{ duration: 1.5 }}
+                      >
+                        {num}
+                      </motion.span>
+                    ) : (
+                      <span>{num}</span>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
-
-      <div className="mt-8 text-center">
-        <div className="inline-flex items-center gap-4 text-sm text-gray-500">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-pink-500"></div>
-            <span>Called</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-white border border-gray-200"></div>
-            <span>Not Called</span>
-          </div>
+      
+      <div className="mt-6 flex justify-center gap-6">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full bg-gradient-to-br from-pink-400 to-pink-600"></div>
+          <span className="text-sm text-gray-600">Called</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded-full bg-white border border-gray-200"></div>
+          <span className="text-sm text-gray-600">Not Called</span>
         </div>
       </div>
     </div>
