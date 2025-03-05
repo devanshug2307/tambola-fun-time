@@ -38,6 +38,24 @@ export type Database = {
           },
         ]
       }
+      current_number: {
+        Row: {
+          id: number
+          number: number
+          timestamp: string | null
+        }
+        Insert: {
+          id?: number
+          number: number
+          timestamp?: string | null
+        }
+        Update: {
+          id?: number
+          number?: number
+          timestamp?: string | null
+        }
+        Relationships: []
+      }
       players: {
         Row: {
           id: string
