@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -89,7 +90,6 @@ const CreateRoomForm: React.FC = () => {
 
     try {
       const roomCode = await createRoom({
-        ticketPrice: formData.ticketPrice,
         numberCallSpeed: formData.numberCallSpeed,
         autoMarkEnabled: formData.autoMarkEnabled,
         winningPatterns: selectedPatterns,
