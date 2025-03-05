@@ -9,6 +9,7 @@ const CreateRoomForm: React.FC = () => {
   const navigate = useNavigate();
   const { createRoom } = useGameContext();
   const [isCreating, setIsCreating] = useState(false);
+  const [joinLink, setJoinLink] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     maxPlayers: 10,
@@ -95,6 +96,7 @@ const CreateRoomForm: React.FC = () => {
         winningPatterns: selectedPatterns,
       });
 
+      setJoinLink(roomCode);
       toast.success(`Room created! Room code: ${roomCode}`);
       navigate("/game");
     } catch (error) {
@@ -257,6 +259,15 @@ const CreateRoomForm: React.FC = () => {
           </ButtonCustom>
         </div>
       </form>
+
+      {joinLink && (
+        <p className="mt-4">
+          Join link:{" "}
+          <a href={joinLink} className="text-blue-500">
+            {joinLink}
+          </a>
+        </p>
+      )}
     </motion.div>
   );
 };

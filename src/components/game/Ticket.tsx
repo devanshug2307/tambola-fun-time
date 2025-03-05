@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGameContext } from "@/context/GameContext";
 import "./Ticket.css"; // Importing CSS for styling
+import Leaderboard from "@/components/game/Leaderboard";
 
 interface TicketProps {
   ticketId: string;
@@ -173,39 +174,7 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
         </div>
       </div>
 
-      <h2 className="leaderboard-title">Leaderboard</h2>
-      <h3 className="claimed-prizes-title">Claimed Prizes</h3>
-      <table className="leaderboard-table">
-        <thead>
-          <tr>
-            <th>Player Name</th>
-            <th>Claimed Prize</th>
-          </tr>
-        </thead>
-        <tbody>
-          {leaderboard.map((entry, index) => (
-            <tr key={index} className="claimed-prize-row">
-              <td>{entry.playerName}</td>
-              <td>{entry.pattern}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <h3 className="all-players-title">All Players</h3>
-      <table className="players-table">
-        <thead>
-          <tr>
-            <th>Player Name</th>
-          </tr>
-        </thead>
-        <tbody>
-          {players.map((player, index) => (
-            <tr key={index} className="player-row">
-              <td>{player.name}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <Leaderboard leaderboard={leaderboard} players={players} />
     </div>
   );
 };

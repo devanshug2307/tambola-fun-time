@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { ButtonCustom } from "@/components/ui/button-custom";
 import { useGameContext } from "@/context/GameContext";
 import { toast } from "sonner";
@@ -8,8 +8,9 @@ import { toast } from "sonner";
 const JoinRoomForm: React.FC = () => {
   const navigate = useNavigate();
   const { joinRoom } = useGameContext();
+  const { roomCode: roomCodeFromParams } = useParams<{ roomCode: string }>();
 
-  const [roomCode, setRoomCode] = useState("");
+  const [roomCode, setRoomCode] = useState(roomCodeFromParams || "");
   const [playerName, setPlayerName] = useState("");
   const [error, setError] = useState("");
   const [isJoining, setIsJoining] = useState(false);

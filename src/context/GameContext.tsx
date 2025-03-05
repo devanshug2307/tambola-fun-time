@@ -541,7 +541,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
       setGameState("waiting");
       toast.success(`Room created: ${roomData.code}`);
 
-      return roomData.code;
+      return `http://yourgameurl.com/join/${roomData.code}`;
     } catch (error) {
       console.error("Error creating room:", error);
       toast.error("Failed to create room. Please try again.");
