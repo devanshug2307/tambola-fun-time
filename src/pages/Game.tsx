@@ -9,6 +9,7 @@ import { Users, ArrowLeft, Play, Pause, Clock, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GameState } from "@/context/GameContext";
+import tickingSound from "@/assets/sounds/ticking-clock_1-27477.mp3";
 
 const Game: React.FC = () => {
   const navigate = useNavigate();
@@ -28,6 +29,19 @@ const Game: React.FC = () => {
   const [callTimer, setCallTimer] = useState<NodeJS.Timeout | null>(null);
   const [nextCallTime, setNextCallTime] = useState<number | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  let isSoundPlaying = false;
+
+  const playTickingSound = () => {
+    if (isSoundPlaying) return; // Prevent playing if already playing
+    isSoundPlaying = true;
+    const audio = new Audio(tickingSound);
+    audio.play();
+    setTimeout(() => {
+      audio.pause();
+      audio.currentTime = 0; // Reset to start
+      isSoundPlaying = false; // Reset the flag
+    }, 1000); // Stop after 1 second
+  };
 
   // Redirect if no room settings (means we're not in a valid game)
   useEffect(() => {
@@ -77,6 +91,11 @@ const Game: React.FC = () => {
 
         setTimeRemaining(seconds);
 
+        // Play ticking sound every second except the last second
+        if (seconds > 1 && seconds < 10) {
+          playTickingSound();
+        }
+
         if (seconds <= 0) {
           clearInterval(timerInterval);
         }
@@ -122,6 +141,7 @@ const Game: React.FC = () => {
       const timer = setInterval(async () => {
         await callNumber();
         setNextCallTime(Date.now() + speed * 1000);
+        playTickingSound(); // Play sound on each number call
       }, speed * 1000);
 
       setCallTimer(timer);
@@ -299,7 +319,9 @@ const Game: React.FC = () => {
             <div className="flex items-center mt-2 sm:mt-0">
               <span className="text-sm mr-2">Last number called:</span>
               <span className="w-10 h-10 flex items-center justify-center bg-indigo-600 text-white rounded-full font-bold text-lg">
-                {lastCalledNumber}
+                {calledNumbers.length > 1
+                  ? calledNumbers[calledNumbers.length - 2]
+                  : "N/A"}
               </span>
             </div>
           </div>

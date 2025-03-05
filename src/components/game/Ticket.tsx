@@ -93,7 +93,11 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
                           ? "bg-gray-50"
                           : "bg-white border border-gray-200 cursor-pointer hover:bg-gray-50"
                       }
-                      ${isMarked ? "bg-pink-200 border-pink-500" : ""}
+                      ${
+                        isMarked
+                          ? "bg-pink-500 text-white shadow-lg border-2 border-pink-600 text-xl"
+                          : ""
+                      }
                       transition-all duration-200 ease-in-out`}
                     onClick={() => num !== null && handleNumberClick(num)}
                     whileTap={{ scale: 0.95 }}
@@ -124,12 +128,9 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
                                 stiffness: 500,
                                 damping: 30,
                               }}
-                              className="absolute inset-0 flex items-center justify-center"
-                              style={{ zIndex: 1 }}
+                              className="hidden"
                             >
-                              <div className="w-5 h-5 rounded-full bg-pink-500/10 flex items-center justify-center">
-                                <div className="w-2 h-2 rounded-full bg-pink-500"></div>
-                              </div>
+                              <div className="w-2 h-2 rounded-full bg-pink-500"></div>
                             </motion.div>
                           )}
                         </AnimatePresence>

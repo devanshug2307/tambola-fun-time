@@ -9,6 +9,7 @@ import CreateRoom from "./pages/CreateRoom";
 import JoinRoom from "./pages/JoinRoom";
 import Game from "./pages/Game";
 import NotFound from "./pages/NotFound";
+import JoinRoomRedirect from "./pages/JoinRoomRedirect";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/create-room" element={<CreateRoom />} />
             <Route path="/join/:roomCode" element={<JoinRoom />} />
+            <Route path="/join-room" element={<JoinRoomRedirect />} />
             <Route path="/game" element={<Game />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

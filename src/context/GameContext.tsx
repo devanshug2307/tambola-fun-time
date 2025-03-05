@@ -218,6 +218,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
     ];
 
     const rowCounts = [0, 0, 0]; // Track numbers filled in each row
+    const usedNumbers = new Set<number>(); // Track used numbers
 
     for (let col = 0; col < 9; col++) {
       const numberCount = Math.floor(Math.random() * 3) + 1;
@@ -228,8 +229,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
       const numbers: number[] = [];
       while (numbers.length < numberCount) {
         const num = Math.floor(Math.random() * (max - min + 1)) + min;
-        if (!numbers.includes(num)) {
+        if (!numbers.includes(num) && !usedNumbers.has(num)) {
           numbers.push(num);
+          usedNumbers.add(num); // Add to used numbers
         }
       }
       numbers.sort((a, b) => a - b);
@@ -248,8 +250,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         const col = Math.floor(Math.random() * 9);
         if (ticket[row][col] === null) {
           const [min, max] = colRanges[col];
-          const num = Math.floor(Math.random() * (max - min + 1)) + min;
+          let num;
+          do {
+            num = Math.floor(Math.random() * (max - min + 1)) + min;
+          } while (usedNumbers.has(num)); // Ensure uniqueness
           ticket[row][col] = num;
+          usedNumbers.add(num); // Add to used numbers
           rowCounts[row]++;
         }
       }
