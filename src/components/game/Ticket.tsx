@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGameContext } from "@/context/GameContext";
+import "./Ticket.css"; // Importing CSS for styling
 
 interface TicketProps {
   ticketId: string;
 }
 
 const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
-  const { tickets, markNumber, calledNumbers, roomSettings, claimPattern } =
-    useGameContext();
+  const {
+    tickets,
+    markNumber,
+    calledNumbers,
+    roomSettings,
+    claimPattern,
+    playerName,
+    leaderboard,
+    players,
+  } = useGameContext();
   const [animatingCell, setAnimatingCell] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -38,8 +47,6 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
       claimPattern(pattern);
     } else if (pattern === "Full House") {
       setMessage("You need to mark all numbers to claim Full House.");
-    } else {
-      claimPattern(pattern);
     }
   };
 
@@ -165,6 +172,40 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
           </button>
         </div>
       </div>
+
+      <h2 className="leaderboard-title">Leaderboard</h2>
+      <h3 className="claimed-prizes-title">Claimed Prizes</h3>
+      <table className="leaderboard-table">
+        <thead>
+          <tr>
+            <th>Player Name</th>
+            <th>Claimed Prize</th>
+          </tr>
+        </thead>
+        <tbody>
+          {leaderboard.map((entry, index) => (
+            <tr key={index} className="claimed-prize-row">
+              <td>{entry.playerName}</td>
+              <td>{entry.pattern}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <h3 className="all-players-title">All Players</h3>
+      <table className="players-table">
+        <thead>
+          <tr>
+            <th>Player Name</th>
+          </tr>
+        </thead>
+        <tbody>
+          {players.map((player, index) => (
+            <tr key={index} className="player-row">
+              <td>{player.name}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };

@@ -172,9 +172,9 @@ const CreateRoomForm: React.FC = () => {
               type="range"
               id="numberCallSpeed"
               name="numberCallSpeed"
-              min="5"
+              min="1"
               max="30"
-              step="5"
+              step="1"
               value={formData.numberCallSpeed}
               onChange={handleChange}
               className="block w-full cursor-pointer"

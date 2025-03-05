@@ -1,0 +1,38 @@
+.leaderboard-title {
+  text-align: center;
+  color: #333;
+}
+
+.claimed-prizes-title,
+.all-players-title {
+  color: #555;
+}
+
+.leaderboard-table,
+.players-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.leaderboard-table th,
+.players-table th {
+  background-color: #f2f2f2;
+  padding: 10px;
+  border: 1px solid #ddd;
+}
+
+.claimed-prize-row:hover,
+.player-row:hover {
+  background-color: #e0f7fa;
+}
+
+.claimed-prize-row,
+.player-row {
+  border-bottom: 1px solid #ddd;
+}
+
+.claimed-prize-row td,
+.player-row td {
+  padding: 10px;
+}

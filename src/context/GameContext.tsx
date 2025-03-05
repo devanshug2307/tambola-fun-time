@@ -38,6 +38,7 @@ interface GameContextType {
   gameState: GameState;
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
   roomSettings: RoomSettings | null;
+  playerName: string;
   createRoom: (settings: Partial<RoomSettings>) => Promise<string>;
   joinRoom: (roomCode: string, playerName: string) => Promise<void>;
   players: Player[];
@@ -51,12 +52,18 @@ interface GameContextType {
   winners: { pattern: string; player: Player }[];
   leaveRoom: () => void;
   currentPhrase: string;
+  leaderboard: { playerName: string; pattern: string }[];
+  setLeaderboard: React.Dispatch<
+    React.SetStateAction<{ playerName: string; pattern: string }[]>
+  >;
+  setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
 }
 
 const defaultContext: GameContextType = {
   gameState: "idle",
   setGameState: () => {},
   roomSettings: null,
+  playerName: "",
   createRoom: async () => "",
   joinRoom: async () => {},
   players: [],
@@ -70,6 +77,9 @@ const defaultContext: GameContextType = {
   winners: [],
   leaveRoom: () => {},
   currentPhrase: "",
+  leaderboard: [],
+  setLeaderboard: () => {},
+  setPlayers: () => {},
 };
 
 const GameContext = createContext<GameContextType>(defaultContext);
@@ -185,6 +195,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
   const [roomId, setRoomId] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [currentPhrase, setCurrentPhrase] = useState<string>("");
+  const [playerName, setPlayerName] = useState<string>("");
+  const [leaderboard, setLeaderboard] = useState<
+    { playerName: string; pattern: string }[]
+  >([]);
 
   const generateTicket = (): (number | null)[][] => {
     const ticket: (number | null)[][] = [
@@ -861,6 +875,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       setWinners((prev) => [...prev, { pattern, player: currentPlayer }]);
+      setLeaderboard((prev) => [
+        ...prev,
+        { playerName: currentPlayer.name, pattern },
+      ]);
       toast.success(`Congratulations! You claimed the ${pattern} pattern.`);
     } catch (error) {
       console.error("Error claiming pattern:", error);
@@ -922,6 +940,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         gameState,
         setGameState,
         roomSettings,
+        playerName,
         createRoom,
         joinRoom,
         players,
@@ -935,6 +954,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         winners,
         leaveRoom,
         currentPhrase,
+        leaderboard,
+        setLeaderboard,
+        setPlayers,
       }}
     >
       {children}
