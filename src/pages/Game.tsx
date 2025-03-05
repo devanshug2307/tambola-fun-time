@@ -105,7 +105,7 @@ const Game: React.FC = () => {
       if (gameState === "playing") {
         setIsPlaying(true);
         await callNumber();
-      } else if (gameState === "idle" || gameState === "paused") {
+      } else if (gameState === "waiting" || gameState === "paused") {
         await supabase
           .from("rooms")
           .update({ status: "playing" })
@@ -131,7 +131,7 @@ const Game: React.FC = () => {
 
       setCallTimer(timer);
 
-      if (gameState === "idle" || gameState === "paused") {
+      if (gameState === "waiting" || gameState === "paused") {
         toast.success("Game started! Numbers will be called automatically.");
       } else {
         toast.success(
@@ -219,7 +219,7 @@ const Game: React.FC = () => {
               <span>{players.length} players</span>
             </div>
 
-            {gameState === "idle" ? (
+            {gameState === "waiting" ? (
               <ButtonCustom variant="primary" onClick={handleStartGame}>
                 <Play size={16} className="mr-1" />
                 Start Game
@@ -264,7 +264,7 @@ const Game: React.FC = () => {
               </span>
               <span
                 className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  gameState === "idle"
+                  gameState === "waiting"
                     ? "bg-yellow-100 text-yellow-800"
                     : gameState === "playing"
                     ? "bg-green-100 text-green-800"
@@ -273,7 +273,7 @@ const Game: React.FC = () => {
                     : "bg-blue-100 text-blue-800"
                 }`}
               >
-                {gameState === "idle"
+                {gameState === "waiting"
                   ? "Waiting to Start"
                   : gameState === "playing"
                   ? isPlaying
