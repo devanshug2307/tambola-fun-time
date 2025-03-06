@@ -5,7 +5,15 @@ import { ButtonCustom } from "@/components/ui/button-custom";
 import { useGameContext } from "@/context/GameContext";
 import Ticket from "@/components/game/Ticket";
 import NumberBoard from "@/components/game/NumberBoard";
-import { Users, ArrowLeft, Play, Pause, Clock, Trophy } from "lucide-react";
+import {
+  Users,
+  ArrowLeft,
+  Play,
+  Pause,
+  Clock,
+  Trophy,
+  Copy,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GameState } from "@/context/GameContext";
@@ -148,12 +156,14 @@ const Game: React.FC = () => {
       setCallTimer(timer);
 
       // Toast messages
-      if (gameState === "waiting") {
-        toast.success("Game started! Numbers will be called automatically.");
-      } else {
+      if (gameState === "waiting" || gameState === "playing") {
         toast.success(
-          "Game resumed! Numbers will continue to be called automatically."
+          gameState === "waiting"
+            ? "Game started! Numbers will be called automatically."
+            : "Game resumed! Numbers will continue to be called automatically."
         );
+      } else {
+        toast.error("Invalid game state.");
       }
     } catch (error) {
       console.error("Error starting game:", error);
@@ -182,6 +192,12 @@ const Game: React.FC = () => {
     if (callTimer) clearInterval(callTimer);
     leaveRoom();
     navigate("/");
+  };
+
+  const handleCopyUrl = () => {
+    const url = `http://yourgameurl.com/join/${roomSettings?.roomCode}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Room URL copied to clipboard!");
   };
 
   // Add debug information to help diagnose issues
@@ -244,6 +260,14 @@ const Game: React.FC = () => {
                 <span className="text-gray-500 mr-2">Room: </span>
               )}
               {roomSettings?.roomCode || "Tambola Game"}
+              {roomSettings?.roomCode && (
+                <button
+                  onClick={handleCopyUrl}
+                  className="ml-2 text-gray-500 hover:text-gray-700"
+                >
+                  <Copy size={16} />
+                </button>
+              )}
             </h1>
 
             {players.find(

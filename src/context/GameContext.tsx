@@ -18,7 +18,6 @@ interface Player {
   name: string;
   isReady: boolean;
   isHost: boolean;
-  is_host: boolean;
 }
 
 interface Ticket {
@@ -57,6 +56,7 @@ interface GameContextType {
     React.SetStateAction<{ playerName: string; pattern: string }[]>
   >;
   setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
+  roomUrl: string | null;
 }
 
 const defaultContext: GameContextType = {
@@ -80,6 +80,7 @@ const defaultContext: GameContextType = {
   leaderboard: [],
   setLeaderboard: () => {},
   setPlayers: () => {},
+  roomUrl: null,
 };
 
 const GameContext = createContext<GameContextType>(defaultContext);
@@ -199,6 +200,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
   const [leaderboard, setLeaderboard] = useState<
     { playerName: string; pattern: string }[]
   >([]);
+  const [roomUrl, setRoomUrl] = useState<string | null>(null);
 
   const generateTicket = (): (number | null)[][] => {
     const ticket: (number | null)[][] = [
@@ -315,7 +317,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
 
           const { data: playerData, error } = await supabase
             .from("players")
-            .select("*, is_host")
+            .select("*")
             .eq("room_id", roomId);
 
           if (error) {
@@ -328,7 +330,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
               id: p.id,
               name: p.name,
               isReady: p.is_ready,
-              isHost: p.is_host || false,
+              isHost: p.is_host !== undefined ? p.is_host : false,
             }));
             setPlayers(formattedPlayers);
           }
@@ -430,7 +432,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
                 id: w.players.id,
                 name: w.players.name,
                 isReady: w.players.is_ready,
-                isHost: w.players.is_host,
+                isHost: false,
               },
             }));
             setWinners(formattedWinners);
@@ -517,7 +519,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         id: playerData.id,
         name: playerData.name,
         isReady: playerData.is_ready,
-        isHost: playerData.is_host,
+        isHost: false,
       });
 
       const ticketNumbers = generateTicket();
@@ -549,14 +551,17 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
           id: playerData.id,
           name: playerData.name,
           isReady: playerData.is_ready,
-          isHost: playerData.is_host,
+          isHost: false,
         },
       ]);
 
       setGameState("waiting");
       toast.success(`Room created: ${roomData.code}`);
 
-      return `http://yourgameurl.com/join/${roomData.code}`;
+      const roomUrl = `http://yourgameurl.com/join/${roomData.code}`;
+      setRoomUrl(roomUrl);
+
+      return roomUrl;
     } catch (error) {
       console.error("Error creating room:", error);
       toast.error("Failed to create room. Please try again.");
@@ -672,7 +677,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         id: playerData.id,
         name: playerData.name,
         isReady: playerData.is_ready,
-        isHost: playerData.is_host,
+        isHost: false,
       });
 
       const ticketNumbers = generateTicket();
@@ -712,7 +717,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
             id: p.id,
             name: p.name,
             isReady: p.is_ready,
-            isHost: p.is_host,
+            isHost: false,
           }))
         );
       }
@@ -1000,6 +1005,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         leaderboard,
         setLeaderboard,
         setPlayers,
+        roomUrl,
       }}
     >
       {children}
