@@ -23,6 +23,7 @@ const Game: React.FC = () => {
     lastCalledNumber,
     calledNumbers,
     leaveRoom,
+    currentPlayer,
   } = useGameContext();
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -244,6 +245,12 @@ const Game: React.FC = () => {
               )}
               {roomSettings?.roomCode || "Tambola Game"}
             </h1>
+
+            {players.find(
+              (player) => player.isHost && player.name === currentPlayer.name
+            ) && (
+              <div className="text-green-500 font-bold mt-2">You are host</div>
+            )}
           </div>
 
           <div className="flex items-center gap-4">

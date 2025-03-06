@@ -17,6 +17,8 @@ interface Player {
   id: string;
   name: string;
   isReady: boolean;
+  isHost: boolean;
+  is_host: boolean;
 }
 
 interface Ticket {
@@ -313,7 +315,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
 
           const { data: playerData, error } = await supabase
             .from("players")
-            .select("*")
+            .select("*, is_host")
             .eq("room_id", roomId);
 
           if (error) {
@@ -326,6 +328,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
               id: p.id,
               name: p.name,
               isReady: p.is_ready,
+              isHost: p.is_host || false,
             }));
             setPlayers(formattedPlayers);
           }
@@ -427,6 +430,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
                 id: w.players.id,
                 name: w.players.name,
                 isReady: w.players.is_ready,
+                isHost: w.players.is_host,
               },
             }));
             setWinners(formattedWinners);
@@ -513,6 +517,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         id: playerData.id,
         name: playerData.name,
         isReady: playerData.is_ready,
+        isHost: playerData.is_host,
       });
 
       const ticketNumbers = generateTicket();
@@ -544,6 +549,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
           id: playerData.id,
           name: playerData.name,
           isReady: playerData.is_ready,
+          isHost: playerData.is_host,
         },
       ]);
 
@@ -666,6 +672,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         id: playerData.id,
         name: playerData.name,
         isReady: playerData.is_ready,
+        isHost: playerData.is_host,
       });
 
       const ticketNumbers = generateTicket();
@@ -705,6 +712,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
             id: p.id,
             name: p.name,
             isReady: p.is_ready,
+            isHost: p.is_host,
           }))
         );
       }
@@ -741,63 +749,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
     const utterance = new SpeechSynthesisUtterance(phrase);
     window.speechSynthesis.speak(utterance);
   };
-
-  // const callNumber = async (): Promise<void> => {
-  //   if (gameState !== "playing" || !roomId || currentPlayer?.isReady === false)
-  //     return;
-
-  //   try {
-  //     console.log("Calling a number...");
-  //     const allNumbers = Array.from({ length: 90 }, (_, i) => i + 1);
-  //     const availableNumbers = allNumbers.filter(
-  //       (num) => !calledNumbers.includes(num)
-  //     );
-
-  //     if (availableNumbers.length === 0) {
-  //       await supabase
-  //         .from("rooms")
-  //         .update({ status: "ended" })
-  //         .eq("id", roomId);
-
-  //       setGameState("ended");
-  //       toast.info("Game over! All numbers have been called.");
-  //       return;
-  //     }
-
-  //     const randomIndex = Math.floor(Math.random() * availableNumbers.length);
-  //     const newNumber = availableNumbers[randomIndex];
-
-  //     console.log(`Selected number: ${newNumber}`);
-
-  //     // Display the corresponding phrase
-  //     const phrase = numberPhrases[newNumber];
-  //     console.log(`Phrase for number ${newNumber}: ${phrase}`);
-  //     setCurrentPhrase(phrase);
-  //     speakPhrase(phrase);
-
-  //     const { error } = await supabase.from("called_numbers").insert({
-  //       room_id: roomId,
-  //       number: newNumber,
-  //     });
-
-  //     if (error) {
-  //       console.error("Error calling number:", error);
-  //       toast.error("Failed to call number. Please try again.");
-  //       return;
-  //     }
-
-  //     setLastCalledNumber(newNumber);
-  //     setCalledNumbers((prev) => [...prev, newNumber]);
-
-  //     // Remove automatic marking here - this will now be handled by the subscription
-  //     // The subscription will respect the autoMarkEnabled setting
-
-  //     toast.success(`Number called: ${newNumber}`);
-  //   } catch (error) {
-  //     console.error("Error calling number:", error);
-  //     toast.error("Failed to call number. Please try again.");
-  //   }
-  // };
 
   const callNumber = async (): Promise<void> => {
     if (gameState !== "playing" || !roomId || currentPlayer?.isReady === false)
@@ -934,56 +885,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error("Error marking number:", error);
     }
   };
-
-  // const claimPattern = async (pattern: string) => {
-  //   if (!currentPlayer || !roomId || !playerId) return;
-
-  //   try {
-  //     const existingClaim = winners.find(
-  //       (w) => w.pattern === pattern && w.player.id === currentPlayer.id
-  //     );
-
-  //     if (existingClaim) {
-  //       toast.error("You've already claimed this pattern!");
-  //       return;
-  //     }
-
-  //     // Check if the player has marked all numbers for Full House
-  //     if (pattern === "Full House") {
-  //       const ticket = tickets.find(
-  //         (t) =>
-  //           t.markedNumbers.length > 0 &&
-  //           t.markedNumbers.length === t.numbers.length
-  //       );
-  //       if (!ticket) {
-  //         toast.error("You need to mark all numbers to claim Full House.");
-  //         return;
-  //       }
-  //     }
-
-  //     const { error } = await supabase.from("winners").insert({
-  //       room_id: roomId,
-  //       player_id: playerId,
-  //       pattern: pattern,
-  //     });
-
-  //     if (error) {
-  //       console.error("Error claiming pattern:", error);
-  //       toast.error("Failed to claim pattern. Please try again.");
-  //       return;
-  //     }
-
-  //     setWinners((prev) => [...prev, { pattern, player: currentPlayer }]);
-  //     setLeaderboard((prev) => [
-  //       ...prev,
-  //       { playerName: currentPlayer.name, pattern },
-  //     ]);
-  //     toast.success(`Congratulations! You claimed the ${pattern} pattern.`);
-  //   } catch (error) {
-  //     console.error("Error claiming pattern:", error);
-  //     toast.error("Failed to claim pattern. Please try again.");
-  //   }
-  // };
 
   const claimPattern = async (pattern: string) => {
     if (!currentPlayer || !roomId || !playerId) return;
