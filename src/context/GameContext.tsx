@@ -885,7 +885,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error("Error marking number:", error);
     }
   };
-
   const claimPattern = async (pattern: string) => {
     if (!currentPlayer || !roomId || !playerId) return;
 
@@ -903,50 +902,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
       const playerTicket = tickets[0]; // Assuming one ticket per player
       if (!playerTicket) {
         toast.error("No ticket found.");
-        return;
-      }
-
-      // Check if the pattern is valid based on marked numbers
-      let isValidClaim = false;
-
-      if (pattern === "Full House") {
-        // Count all non-null numbers on the ticket
-        const totalNumbers = playerTicket.numbers
-          .flat()
-          .filter((num) => num !== null).length;
-        // Check if all numbers are marked
-        isValidClaim = playerTicket.markedNumbers.length >= totalNumbers;
-      } else if (pattern === "Early Five") {
-        // For Early Five, just check if at least 5 numbers are marked
-        isValidClaim = playerTicket.markedNumbers.length >= 5;
-      } else if (pattern === "Top Line") {
-        // Check if all numbers in the top row are marked
-        const topRowNumbers = playerTicket.numbers[0].filter(
-          (num) => num !== null
-        );
-        isValidClaim = topRowNumbers.every((num) =>
-          playerTicket.markedNumbers.includes(num as number)
-        );
-      } else if (pattern === "Middle Line") {
-        // Check if all numbers in the middle row are marked
-        const middleRowNumbers = playerTicket.numbers[1].filter(
-          (num) => num !== null
-        );
-        isValidClaim = middleRowNumbers.every((num) =>
-          playerTicket.markedNumbers.includes(num as number)
-        );
-      } else if (pattern === "Bottom Line") {
-        // Check if all numbers in the bottom row are marked
-        const bottomRowNumbers = playerTicket.numbers[2].filter(
-          (num) => num !== null
-        );
-        isValidClaim = bottomRowNumbers.every((num) =>
-          playerTicket.markedNumbers.includes(num as number)
-        );
-      }
-
-      if (!isValidClaim) {
-        toast.error(`You haven't completed the ${pattern} pattern yet.`);
         return;
       }
 

@@ -40,21 +40,51 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
 
   const handleClaimPattern = (pattern: string) => {
     const markedCount = ticket.markedNumbers.length;
-    const totalNumbers = ticket.numbers.length;
     const isPatternClaimed = winners.some((w) => w.pattern === pattern);
+
     if (isPatternClaimed) {
       setMessage("This prize has already been claimed by another user.");
       return;
     }
-    if (pattern === "Early Five" && markedCount === 5) {
-      claimPattern(pattern);
-    } else if (pattern === "Early Five") {
-      setMessage("You need to mark exactly 5 numbers to claim Early 5.");
-    } else if (pattern === "Full House" && markedCount === totalNumbers) {
-      claimPattern(pattern);
-    } else if (pattern === "Full House") {
-      setMessage("You need to mark all numbers to claim Full House.");
+
+    // Check if the pattern is valid based on marked numbers
+    let isValidClaim = false;
+
+    if (pattern === "Full House") {
+      // Count all non-null numbers on the ticket
+      const totalNumbers = ticket.numbers
+        .flat()
+        .filter((num) => num !== null).length;
+      // Check if all numbers are marked
+      isValidClaim = ticket.markedNumbers.length >= totalNumbers;
+    } else if (pattern === "Early 5" && markedCount >= 5) {
+      isValidClaim = true;
+    } else if (pattern === "Top Line") {
+      // Check if all numbers in the top row are marked
+      const topRowNumbers = ticket.numbers[0].filter((num) => num !== null);
+      isValidClaim = topRowNumbers.every((num) =>
+        ticket.markedNumbers.includes(num as number)
+      );
+    } else if (pattern === "Middle Line") {
+      // Check if all numbers in the middle row are marked
+      const middleRowNumbers = ticket.numbers[1].filter((num) => num !== null);
+      isValidClaim = middleRowNumbers.every((num) =>
+        ticket.markedNumbers.includes(num as number)
+      );
+    } else if (pattern === "Bottom Line") {
+      // Check if all numbers in the bottom row are marked
+      const bottomRowNumbers = ticket.numbers[2].filter((num) => num !== null);
+      isValidClaim = bottomRowNumbers.every((num) =>
+        ticket.markedNumbers.includes(num as number)
+      );
     }
+
+    if (!isValidClaim) {
+      setMessage(`You haven't completed the ${pattern} pattern yet.`);
+      return;
+    }
+
+    claimPattern(pattern);
   };
 
   useEffect(() => {
@@ -165,7 +195,7 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
           marked
         </div>
 
-        <div className="flex flex-wrap justify-center space-x-2 space-y-2">
+        <div className="flex flex-wrap justify-center gap-2">
           <button
             className="flex items-center px-2 py-1 bg-pink-500 text-white text-xs rounded-md hover:bg-pink-600 transition-colors"
             onClick={() => handleClaimPattern("Early 5")}
@@ -186,15 +216,15 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
           </button>
           <button
             className="flex items-center px-2 py-1 bg-yellow-500 text-white text-xs rounded-md hover:bg-yellow-600 transition-colors"
-            onClick={() => handleClaimPattern("Bottom Line")}
+            onClick={() => handleClaimPattern("Middle Line")}
           >
-            <i className="fas fa-arrow-down mr-1"></i> Claim Bottom Line
+            <i className="fas fa-arrow-down mr-1"></i> Claim Middle Line
           </button>
           <button
             className="flex items-center px-2 py-1 bg-purple-500 text-white text-xs rounded-md hover:bg-purple-600 transition-colors"
-            onClick={() => handleClaimPattern("Last Line")}
+            onClick={() => handleClaimPattern("Bottom Line")}
           >
-            <i className="fas fa-flag mr-1"></i> Claim Last Line
+            <i className="fas fa-flag mr-1"></i> Claim Bottom Line
           </button>
         </div>
       </div>
