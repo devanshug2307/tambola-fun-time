@@ -351,12 +351,22 @@ const Game: React.FC = () => {
                   <Trophy size={18} className="mr-2 text-amber-500" />
                   Winning Patterns
                 </h2>
-                <div className="grid grid-cols-2 gap-2">
-                  {roomSettings?.winningPatterns.map((pattern, index) => (
-                    <div key={index} className="text-sm bg-gray-50 rounded p-2">
-                      {pattern}
-                    </div>
-                  ))}
+                <div className="flex flex-wrap gap-2">
+                  <button className="bg-yellow-200 text-gray-800 font-semibold py-2 px-4 rounded shadow hover:bg-yellow-300 transition duration-200 flex items-center">
+                    <Trophy size={16} className="mr-1" /> Early Five
+                  </button>
+                  <button className="bg-yellow-300 text-gray-800 font-semibold py-2 px-4 rounded shadow hover:bg-yellow-400 transition duration-200 flex items-center">
+                    <Trophy size={16} className="mr-1" /> Top Line
+                  </button>
+                  <button className="bg-yellow-400 text-gray-800 font-semibold py-2 px-4 rounded shadow hover:bg-yellow-500 transition duration-200 flex items-center">
+                    <Trophy size={16} className="mr-1" /> Middle Line
+                  </button>
+                  <button className="bg-yellow-500 text-gray-800 font-semibold py-2 px-4 rounded shadow hover:bg-yellow-600 transition duration-200 flex items-center">
+                    <Trophy size={16} className="mr-1" /> Bottom Line
+                  </button>
+                  <button className="bg-yellow-600 text-gray-800 font-semibold py-2 px-4 rounded shadow hover:bg-yellow-700 transition duration-200 flex items-center">
+                    <Trophy size={16} className="mr-1" /> Full House
+                  </button>
                 </div>
               </div>
 
