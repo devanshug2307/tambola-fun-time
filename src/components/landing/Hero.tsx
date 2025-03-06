@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import Tilt from "react-parallax-tilt";
@@ -10,15 +10,64 @@ import {
   Trophy,
   Heart,
   Play,
-  Share,
-  Sparkles,
-  UserPlus,
-  Users as UsersIcon,
+  Upload,
+  Award,
+  Crown,
+  Star,
+  Gift,
+  HelpCircle,
+  ArrowRight,
 } from "lucide-react";
+
+// Import the sound file
+import tambolaSound from "../../assets/sounds/Tambola Time.mp3";
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState<number | null>(null);
+  const [audio] = useState(new Audio(tambolaSound));
+  const [randomNumber, setRandomNumber] = useState<number>(42);
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  const playSound = () => {
+    audio.currentTime = 13;
+    audio.play().catch((error) => {
+      console.error("Error playing sound:", error);
+    });
+  };
+
+  useEffect(() => {
+    // Play the sound when the component mounts
+    audio.currentTime = 13;
+    audio.play().catch((error) => {
+      console.error("Error playing sound:", error);
+    });
+
+    // Handle user interaction for browsers that require it
+    const handleUserInteraction = () => {
+      audio.play();
+      window.removeEventListener("click", handleUserInteraction);
+    };
+    window.addEventListener("click", handleUserInteraction);
+
+    // Random number generation every second
+    const intervalId = setInterval(() => {
+      setRandomNumber(Math.floor(Math.random() * 90) + 1);
+    }, 1000);
+
+    // Show tooltip briefly after component loads
+    setTimeout(() => {
+      setShowTooltip(true);
+      setTimeout(() => setShowTooltip(false), 5000);
+    }, 2000);
+
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+      window.removeEventListener("click", handleUserInteraction);
+      clearInterval(intervalId);
+    };
+  }, [audio]);
 
   // Animation Variants
   const containerVariants = {
@@ -33,11 +82,25 @@ const Home: React.FC = () => {
       opacity: 1,
       transition: { type: "spring", stiffness: 100 },
     },
-    hover: { scale: 1.05, rotate: 2, transition: { duration: 0.3 } },
+    hover: { scale: 1.05, transition: { duration: 0.3 } },
   };
 
-  const numberBallVariants = {
-    hover: { rotateY: 360, transition: { duration: 1, repeat: Infinity } },
+  const ballVariants = {
+    initial: { scale: 0.8, rotate: 0 },
+    animate: {
+      scale: [0.8, 1, 0.8],
+      rotate: [0, 10, -10, 0],
+      transition: {
+        scale: { repeat: Infinity, duration: 3, ease: "easeInOut" },
+        rotate: { repeat: Infinity, duration: 5, ease: "easeInOut" },
+      },
+    },
+  };
+
+  const numberVariants = {
+    initial: { scale: 1, opacity: 0 },
+    animate: { scale: 1, opacity: 1 },
+    exit: { scale: 0.5, opacity: 0 },
   };
 
   // Particle System Setup
@@ -47,15 +110,15 @@ const Home: React.FC = () => {
 
   const particlesOptions = {
     particles: {
-      number: { value: 50, density: { enable: true, value_area: 800 } },
-      color: { value: ["#FFD700", "#FF69B4", "#00CED1"] },
+      number: { value: 30, density: { enable: true, value_area: 800 } },
+      color: { value: ["#8a56ff", "#d46ef9", "#f680ff"] },
       shape: { type: "circle" },
-      opacity: { value: 0.5, random: true },
-      size: { value: 5, random: true },
+      opacity: { value: 0.3, random: true },
+      size: { value: 4, random: true },
       move: {
         enable: true,
-        speed: 2,
-        direction: "none",
+        speed: 1.5,
+        direction: "top",
         random: false,
         straight: false,
         out_mode: "out",
@@ -73,21 +136,44 @@ const Home: React.FC = () => {
     },
   };
 
-  return (
-    <div className="relative overflow-hidden min-h-screen text-white">
-      {/* Animated Gradient Background */}
-      <motion.div
-        className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500"
-        animate={{
-          background: [
-            "linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%)",
-            "linear-gradient(135deg, #EC4899 0%, #4F46E5 50%, #7C3AED 100%)",
-            "linear-gradient(135deg, #7C3AED 0%, #EC4899 50%, #4F46E5 100%)",
-          ],
-        }}
-        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-      />
+  const featureItems = [
+    {
+      icon: Play,
+      title: "Create a Game",
+      description: "Customize rooms with unique rules and exciting prizes.",
+    },
+    {
+      icon: Upload,
+      title: "Invite Players",
+      description: "Share room codes, connect with friends instantly.",
+    },
+    {
+      icon: Trophy,
+      title: "Win Together",
+      description: "Experience the joy of collective triumph and excitement.",
+    },
+  ];
 
+  const premiumFeatures = [
+    {
+      icon: Crown,
+      title: "Premium Experience",
+      description: "Immersive design, smooth animations, intuitive interface.",
+    },
+    {
+      icon: Star,
+      title: "Multiple Game Modes",
+      description: "Explore exciting patterns from Early 5 to Full House!",
+    },
+    {
+      icon: Gift,
+      title: "Special Events",
+      description: "Exclusive tournaments with amazing rewards await!",
+    },
+  ];
+
+  return (
+    <div className="relative overflow-hidden min-h-screen text-gray-800 bg-gradient-to-b from-purple-50 to-pink-100">
       {/* Particle System */}
       <Particles
         id="tsparticles"
@@ -96,244 +182,237 @@ const Home: React.FC = () => {
         className="absolute inset-0"
       />
 
-      <div className="relative z-10 container mx-auto px-4 sm:px-6 py-12">
+      <div className="relative z-10 container mx-auto px-4 sm:px-6 py-12 flex flex-col items-center">
+        {/* Ball with Random Number */}
+        <motion.div
+          className="mb-8 relative"
+          initial="initial"
+          animate="animate"
+          variants={ballVariants}
+        >
+          <div className="relative w-32 h-32">
+            {/* Outer glow effect */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 opacity-30 blur-md"></div>
+
+            {/* Ball */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg"></div>
+
+            {/* Inner light reflection */}
+            <div className="absolute top-1 left-3 w-8 h-3 bg-white opacity-40 rounded-full"></div>
+
+            {/* Number */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={randomNumber}
+                className="absolute inset-0 flex items-center justify-center text-4xl font-bold text-white"
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                variants={numberVariants}
+              >
+                {randomNumber}
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Tooltip */}
+            <AnimatePresence>
+              {showTooltip && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="absolute top-full left-1/2 transform -translate-x-1/2 mt-4 px-4 py-2 bg-white rounded-lg shadow-md text-sm text-gray-700 w-48 text-center"
+                >
+                  Tambola numbers are called one by one!
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.div>
+
         {/* Hero Section */}
         <motion.div
-          className="text-center mb-12"
+          className="text-center mb-16 max-w-3xl mx-auto"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
         >
-          {/* 3D Number Ball */}
-          <motion.div
-            className="mx-auto mb-6 w-24 h-24 bg-gradient-to-r from-yellow-400 to-pink-500 rounded-full flex items-center justify-center text-3xl font-bold text-gray-900 shadow-lg"
-            variants={numberBallVariants}
-            whileHover="hover"
-            style={{ transformStyle: "preserve-3d" }}
-          >
-            <span style={{ transform: "translateZ(20px)" }}>42</span>
-          </motion.div>
-
           <motion.h1
-            className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight mb-4 drop-shadow-lg font-[Poppins]"
+            className="text-6xl md:text-7xl font-bold mb-6 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 font-[Poppins]"
             variants={itemVariants}
           >
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-yellow-300 to-pink-300">
-              Tambola Time!
-            </span>
+            Tambola
           </motion.h1>
+
           <motion.p
-            className="text-base sm:text-lg md:text-xl max-w-2xl mx-auto mb-8 text-gray-200"
+            className="text-base sm:text-lg md:text-xl mb-10 text-gray-700 max-w-2xl mx-auto"
             variants={itemVariants}
           >
-            Join the ultimate Housie party—create rooms, invite friends, and win
-            big!
+            Revolutionize game nights with our next-generation Housie
+            experience. Create epic rooms, invite your squad, and turn every
+            moment into a celebration of wins!
           </motion.p>
+
           <motion.div
-            className="flex flex-col sm:flex-row gap-4 justify-center"
+            className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
             variants={itemVariants}
           >
-            <Tilt tiltMaxAngleX={15} tiltMaxAngleY={15}>
+            <Tilt tiltMaxAngleX={10} tiltMaxAngleY={10} scale={1.05}>
               <ButtonCustom
                 variant="primary"
                 size="lg"
                 onClick={() => navigate("/create-room")}
-                className="group bg-gradient-to-r from-yellow-400 to-pink-500 hover:from-yellow-500 hover:to-pink-600 text-gray-900 font-bold shadow-lg transition-all duration-300 transform hover:-translate-y-2 animate-pulse border-2 border-transparent hover:border-yellow-300"
+                className="group bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium py-3 px-8 rounded-full shadow-md transition-all duration-300 flex items-center"
               >
-                <Play className="w-5 h-5 mr-2" /> Start Playing
+                Create Room
+                <motion.span
+                  initial={{ x: 0, opacity: 0.5 }}
+                  animate={{ x: [0, 5, 0], opacity: [0.5, 1, 0.5] }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </motion.span>
               </ButtonCustom>
             </Tilt>
-            <Tilt tiltMaxAngleX={15} tiltMaxAngleY={15}>
+
+            <Tilt tiltMaxAngleX={10} tiltMaxAngleY={10} scale={1.05}>
               <ButtonCustom
                 variant="outline"
                 size="lg"
                 onClick={() => navigate("/join-room")}
-                className="border-2 border-yellow-300 text-yellow-300 hover:bg-yellow-300 hover:text-gray-900 font-bold transition-all duration-300 transform hover:-translate-y-2"
+                className="border-2 border-purple-500 text-purple-600 hover:bg-purple-500 hover:text-white font-medium py-3 px-8 rounded-full transition-all duration-300"
               >
-                Join a Game
+                Join Room
               </ButtonCustom>
             </Tilt>
           </motion.div>
+
+          {/* How to Play button */}
+          <motion.button
+            variants={itemVariants}
+            onClick={() => navigate("/how-to-play")}
+            className="flex items-center justify-center mx-auto text-purple-600 hover:text-purple-800 transition-colors"
+          >
+            <HelpCircle className="w-4 h-4 mr-1" />
+            <span className="text-sm">New to Tambola? Learn how to play</span>
+          </motion.button>
         </motion.div>
 
         {/* Social Proof */}
         <motion.div
-          className="flex flex-col sm:flex-row justify-center gap-6 mb-12 text-sm md:text-base"
+          className="flex flex-wrap justify-center gap-6 mb-16"
           variants={itemVariants}
         >
           {[
-            { icon: Users, label: "1000+ Players" },
+            { icon: Users, label: "1000+ Active Players" },
             { icon: Trophy, label: "500+ Winners" },
-            { icon: Heart, label: "4.9/5 Stars" },
+            { icon: Heart, label: "4.9/5 Rating" },
           ].map((stat) => (
-            <Tilt key={stat.label} tiltMaxAngleX={10} tiltMaxAngleY={10}>
-              <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full shadow-md hover:shadow-xl transition-shadow duration-300">
-                <stat.icon className="w-5 h-5 text-yellow-300" />
-                <span>{stat.label}</span>
-              </div>
-            </Tilt>
+            <motion.div
+              key={stat.label}
+              variants={itemVariants}
+              whileHover="hover"
+              className="flex items-center gap-2 bg-white/70 backdrop-blur-sm px-5 py-2 rounded-full shadow-sm"
+            >
+              <stat.icon className="w-5 h-5 text-purple-600" />
+              <span className="text-purple-800">{stat.label}</span>
+            </motion.div>
           ))}
         </motion.div>
 
-        {/* How to Play Tambola Section */}
+        {/* Features Grid */}
         <motion.section
-          className="py-12 px-4 sm:px-6 bg-white/10 backdrop-blur-md rounded-3xl shadow-lg mb-12"
+          className="w-full max-w-6xl mx-auto mb-16"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
         >
-          <motion.h2
-            className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-6 text-yellow-300 font-[Poppins]"
-            variants={itemVariants}
-          >
-            How to Play Tambola 🎉
-          </motion.h2>
-          <motion.p
-            className="text-center text-gray-200 max-w-3xl mx-auto mb-12 text-base sm:text-lg"
-            variants={itemVariants}
-          >
-            Tambola (aka Bingo/Housie) is a fun game of numbers! The host calls
-            numbers (1-90), and players mark them on their tickets to win
-            exciting prizes.
-          </motion.p>
-
-          {/* For Hosts */}
-          <motion.div className="mb-12" variants={containerVariants}>
-            <h3 className="text-xl sm:text-2xl font-semibold text-center mb-6 text-white">
-              For Hosts
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
-              {[
-                {
-                  icon: Play,
-                  title: "1. Start Game",
-                  desc: "Create & configure your game room.",
-                },
-                {
-                  icon: Share,
-                  title: "2. Share Code",
-                  desc: "Invite friends with a unique code.",
-                },
-                {
-                  icon: Sparkles,
-                  title: "3. Enjoy Game",
-                  desc: "Call numbers & celebrate wins!",
-                },
-              ].map((step, index) => (
-                <Tilt key={step.title} tiltMaxAngleX={10} tiltMaxAngleY={10}>
-                  <motion.div
-                    variants={itemVariants}
-                    whileHover="hover"
-                    className="relative bg-white/20 p-6 rounded-xl shadow-lg backdrop-blur-md hover:bg-white/30 transition-all duration-300 border-2 border-transparent hover:border-yellow-300/50"
-                    onMouseEnter={() => setActiveStep(index)}
-                    onMouseLeave={() => setActiveStep(null)}
-                  >
-                    <step.icon className="w-12 h-12 mx-auto mb-4 text-yellow-300 animate-pulse" />
-                    <h4 className="text-lg font-semibold text-white mb-2">
-                      {step.title}
-                    </h4>
-                    <p className="text-gray-200 text-center">{step.desc}</p>
-                    {activeStep === index && (
-                      <motion.div
-                        initial={{ scaleX: 0 }}
-                        animate={{ scaleX: 1 }}
-                        className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-400 to-pink-500 rounded-b-xl"
-                        transition={{ duration: 0.3 }}
-                      />
-                    )}
-                  </motion.div>
-                </Tilt>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* For Participants */}
-          <motion.div variants={containerVariants}>
-            <h3 className="text-xl sm:text-2xl font-semibold text-center mb-6 text-white">
-              For Participants
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
-              {[
-                {
-                  icon: Share,
-                  title: "1. Enter Code",
-                  desc: "Use the invite code to join.",
-                },
-                {
-                  icon: UserPlus,
-                  title: "2. Add Name",
-                  desc: "Set your player alias.",
-                },
-                {
-                  icon: UsersIcon,
-                  title: "3. Play Game",
-                  desc: "Mark numbers & win!",
-                },
-              ].map((step, index) => (
-                <Tilt key={step.title} tiltMaxAngleX={10} tiltMaxAngleY={10}>
-                  <motion.div
-                    variants={itemVariants}
-                    whileHover="hover"
-                    className="relative bg-white/20 p-6 rounded-xl shadow-lg backdrop-blur-md hover:bg-white/30 transition-all duration-300 border-2 border-transparent hover:border-yellow-300/50"
-                    onMouseEnter={() => setActiveStep(index + 3)}
-                    onMouseLeave={() => setActiveStep(null)}
-                  >
-                    <step.icon className="w-12 h-12 mx-auto mb-4 text-yellow-300 animate-pulse" />
-                    <h4 className="text-lg font-semibold text-white mb-2">
-                      {step.title}
-                    </h4>
-                    <p className="text-gray-200 text-center">{step.desc}</p>
-                    {activeStep === index + 3 && (
-                      <motion.div
-                        initial={{ scaleX: 0 }}
-                        animate={{ scaleX: 1 }}
-                        className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-400 to-pink-500 rounded-b-xl"
-                        transition={{ duration: 0.3 }}
-                      />
-                    )}
-                  </motion.div>
-                </Tilt>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* CTA to Start Playing */}
-          <motion.div className="mt-12 text-center" variants={itemVariants}>
-            <Tilt tiltMaxAngleX={15} tiltMaxAngleY={15}>
-              <ButtonCustom
-                variant="primary"
-                size="lg"
-                onClick={() => navigate("/create-room")}
-                className="bg-gradient-to-r from-yellow-400 to-pink-500 text-gray-900 font-bold shadow-lg hover:bg-gradient-to-r hover:from-yellow-500 hover:to-pink-600 transition-all duration-300 animate-pulse border-2 border-transparent hover:border-yellow-300"
-              >
-                Ready to Play? Start Now! 🚀
-              </ButtonCustom>
-            </Tilt>
-          </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {featureItems.map((feature, index) => (
+              <Tilt tiltMaxAngleX={5} tiltMaxAngleY={5} key={feature.title}>
+                <motion.div
+                  variants={itemVariants}
+                  whileHover="hover"
+                  className="bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-sm flex flex-col items-center text-center h-full"
+                  style={{
+                    background:
+                      index === 0
+                        ? "rgba(230, 240, 255, 0.8)"
+                        : index === 1
+                        ? "rgba(230, 255, 240, 0.8)"
+                        : "rgba(255, 230, 250, 0.8)",
+                  }}
+                >
+                  <div className="bg-purple-100 p-4 rounded-full mb-4">
+                    <feature.icon className="w-10 h-10 text-purple-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3 text-purple-800">
+                    {feature.title}
+                  </h3>
+                  <p className="text-gray-600">{feature.description}</p>
+                </motion.div>
+              </Tilt>
+            ))}
+          </div>
         </motion.section>
 
-        {/* Floating Play Button */}
+        {/* Premium Features */}
+        <motion.section
+          className="w-full max-w-6xl mx-auto mb-16"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {premiumFeatures.map((feature, index) => (
+              <Tilt tiltMaxAngleX={5} tiltMaxAngleY={5} key={feature.title}>
+                <motion.div
+                  variants={itemVariants}
+                  whileHover="hover"
+                  className="bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-sm flex flex-col items-center text-center h-full"
+                >
+                  <div className="bg-purple-100 p-4 rounded-full mb-4">
+                    <feature.icon className="w-10 h-10 text-purple-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3 text-purple-800">
+                    {feature.title}
+                  </h3>
+                  <p className="text-gray-600">{feature.description}</p>
+                </motion.div>
+              </Tilt>
+            ))}
+          </div>
+        </motion.section>
+
+        {/* Quick action button */}
         <motion.div
           className="fixed bottom-6 right-6 z-20"
-          initial={{ opacity: 0, scale: 0 }}
+          initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 1, type: "spring", stiffness: 120 }}
         >
-          <Tilt tiltMaxAngleX={15} tiltMaxAngleY={15}>
+          <Tilt tiltMaxAngleX={10} tiltMaxAngleY={10}>
             <ButtonCustom
               variant="primary"
               size="lg"
               onClick={() => navigate("/create-room")}
-              className="bg-gradient-to-r from-yellow-400 to-pink-500 text-gray-900 font-bold rounded-full shadow-lg hover:bg-gradient-to-r hover:from-yellow-500 hover:to-pink-600 transition-all duration-300 animate-bounce border-2 border-transparent hover:border-yellow-300"
+              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-full shadow-xl flex items-center justify-center w-16 h-16 hover:scale-110 transition-all duration-300"
             >
-              Play Now!
+              <Play className="w-8 h-8" />
             </ButtonCustom>
           </Tilt>
+          <div className="absolute -top-8 right-0 bg-white px-3 py-1 rounded-full text-xs text-purple-700 shadow-sm">
+            Play Now
+          </div>
         </motion.div>
 
         {/* Footer */}
         <motion.footer
-          className="mt-12 text-center text-sm text-gray-300"
+          className="mt-12 text-center text-sm text-gray-500"
           variants={itemVariants}
         >
           <p>© 2025 Tambola Online. Let the games begin!</p>
