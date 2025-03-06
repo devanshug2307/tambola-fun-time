@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import Hero from "@/components/landing/Hero";
-import FeatureSection from "@/components/landing/FeatureSection";
+
 import { GameProvider } from "@/context/GameContext";
 
 const Index: React.FC = () => {
@@ -14,7 +14,6 @@ const Index: React.FC = () => {
         className="min-h-screen bg-white"
       >
         <Hero />
-        <FeatureSection />
       </motion.div>
     </GameProvider>
   );
