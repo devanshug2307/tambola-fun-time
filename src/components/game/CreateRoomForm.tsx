@@ -12,10 +12,8 @@ const CreateRoomForm: React.FC = () => {
   const [joinLink, setJoinLink] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    maxPlayers: 10,
     ticketPrice: 5,
     numberCallSpeed: 10,
-    autoMarkEnabled: true,
     winningPatterns: {
       earlyFive: true,
       topLine: true,
@@ -58,45 +56,24 @@ const CreateRoomForm: React.FC = () => {
 
     // Make sure at least one winning pattern is selected
     const hasSelectedPattern = Object.values(formData.winningPatterns).some(
-      (isSelected) => isSelected
+      (pattern) => pattern
     );
+
     if (!hasSelectedPattern) {
-      toast.error("Please select at least one winning pattern");
+      toast.error("Please select at least one winning pattern.");
       return;
     }
 
     setIsCreating(true);
 
-    const selectedPatterns = Object.entries(formData.winningPatterns)
-      .filter(([_, isSelected]) => isSelected)
-      .map(([pattern, _]) => {
-        switch (pattern) {
-          case "earlyFive":
-            return "Early Five";
-          case "topLine":
-            return "Top Line";
-          case "middleLine":
-            return "Middle Line";
-          case "bottomLine":
-            return "Bottom Line";
-          case "fullHouse":
-            return "Full House";
-          default:
-            return "";
-        }
-      })
-      .filter((p) => p !== "");
-
     try {
       const roomCode = await createRoom({
-        maxPlayers: formData.maxPlayers,
-        ticketPrice: formData.ticketPrice,
         numberCallSpeed: formData.numberCallSpeed,
-        autoMarkEnabled: formData.autoMarkEnabled,
-        winningPatterns: selectedPatterns,
+        winningPatterns: Object.keys(formData.winningPatterns).filter(
+          (key) => formData.winningPatterns[key]
+        ),
       });
-
-      setJoinLink(roomCode);
+      setJoinLink(`${window.location.origin}/join/${roomCode}`);
       toast.success(`Room created! Room code: ${roomCode}`);
       navigate("/game");
     } catch (error) {
@@ -149,24 +126,6 @@ const CreateRoomForm: React.FC = () => {
                 <span className="font-bold">{formData.numberCallSpeed}s</span>
                 <span>Slow (30s)</span>
               </div>
-            </div>
-
-            <div className="flex items-center bg-gray-100 rounded-lg p-4 shadow-inner">
-              <input
-                type="checkbox"
-                id="autoMarkEnabled"
-                name="autoMarkEnabled"
-                checked={formData.autoMarkEnabled}
-                onChange={handleChange}
-                className="h-5 w-5 text-purple-700 focus:ring-purple-700 border-gray-300 rounded"
-                disabled={isCreating}
-              />
-              <label
-                htmlFor="autoMarkEnabled"
-                className="ml-3 text-sm text-gray-700"
-              >
-                Enable Auto-Daub (automatically mark numbers)
-              </label>
             </div>
           </div>
 

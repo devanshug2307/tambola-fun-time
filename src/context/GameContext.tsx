@@ -364,17 +364,28 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
               setLastCalledNumber(numbers[numbers.length - 1]);
             }
 
-            if (roomSettings?.autoMarkEnabled) {
+            // Fix for auto-marking - only if enabled
+            if (roomSettings?.autoMarkEnabled && payload.new) {
               const latestNumber = payload.new.number;
-              tickets.forEach((ticket) => {
-                markNumber(ticket.id, latestNumber);
-              });
+
+              // Only auto-mark tickets that belong to the current player
+              if (playerId) {
+                tickets.forEach((ticket) => {
+                  // Check if the number exists on this ticket before marking
+                  const numberExists = ticket.numbers.some((row) =>
+                    row.some((cell) => cell === latestNumber)
+                  );
+
+                  if (numberExists) {
+                    markNumber(ticket.id, latestNumber);
+                  }
+                });
+              }
             }
           }
         }
       )
       .subscribe();
-
     const winnersChannel = supabase
       .channel("winners-updates")
       .on(
@@ -778,10 +789,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
       setLastCalledNumber(newNumber);
       setCalledNumbers((prev) => [...prev, newNumber]);
 
-      // Mark the number on all tickets
-      tickets.forEach((ticket) => {
-        markNumber(ticket.id, newNumber);
-      });
+      // Remove automatic marking here - this will now be handled by the subscription
+      // The subscription will respect the autoMarkEnabled setting
 
       toast.success(`Number called: ${newNumber}`);
     } catch (error) {
