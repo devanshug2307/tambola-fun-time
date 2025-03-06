@@ -165,18 +165,36 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
           marked
         </div>
 
-        <div className="flex space-x-2">
+        <div className="flex flex-wrap justify-center space-x-2 space-y-2">
           <button
-            className="px-3 py-1 bg-pink-500 text-white text-sm rounded-md hover:bg-pink-600 transition-colors"
-            onClick={() => handleClaimPattern("Early Five")}
+            className="flex items-center px-2 py-1 bg-pink-500 text-white text-xs rounded-md hover:bg-pink-600 transition-colors"
+            onClick={() => handleClaimPattern("Early 5")}
           >
-            Claim Early 5
+            <i className="fas fa-star mr-1"></i> Claim Early 5
           </button>
           <button
-            className="px-3 py-1 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 transition-colors"
+            className="flex items-center px-2 py-1 bg-blue-500 text-white text-xs rounded-md hover:bg-blue-600 transition-colors"
             onClick={() => handleClaimPattern("Full House")}
           >
-            Claim Full House
+            <i className="fas fa-home mr-1"></i> Claim Full House
+          </button>
+          <button
+            className="flex items-center px-2 py-1 bg-green-500 text-white text-xs rounded-md hover:bg-green-600 transition-colors"
+            onClick={() => handleClaimPattern("Top Line")}
+          >
+            <i className="fas fa-arrow-up mr-1"></i> Claim Top Line
+          </button>
+          <button
+            className="flex items-center px-2 py-1 bg-yellow-500 text-white text-xs rounded-md hover:bg-yellow-600 transition-colors"
+            onClick={() => handleClaimPattern("Bottom Line")}
+          >
+            <i className="fas fa-arrow-down mr-1"></i> Claim Bottom Line
+          </button>
+          <button
+            className="flex items-center px-2 py-1 bg-purple-500 text-white text-xs rounded-md hover:bg-purple-600 transition-colors"
+            onClick={() => handleClaimPattern("Last Line")}
+          >
+            <i className="fas fa-flag mr-1"></i> Claim Last Line
           </button>
         </div>
       </div>

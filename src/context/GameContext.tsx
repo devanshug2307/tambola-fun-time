@@ -742,15 +742,95 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
     window.speechSynthesis.speak(utterance);
   };
 
+  // const callNumber = async (): Promise<void> => {
+  //   if (gameState !== "playing" || !roomId || currentPlayer?.isReady === false)
+  //     return;
+
+  //   try {
+  //     console.log("Calling a number...");
+  //     const allNumbers = Array.from({ length: 90 }, (_, i) => i + 1);
+  //     const availableNumbers = allNumbers.filter(
+  //       (num) => !calledNumbers.includes(num)
+  //     );
+
+  //     if (availableNumbers.length === 0) {
+  //       await supabase
+  //         .from("rooms")
+  //         .update({ status: "ended" })
+  //         .eq("id", roomId);
+
+  //       setGameState("ended");
+  //       toast.info("Game over! All numbers have been called.");
+  //       return;
+  //     }
+
+  //     const randomIndex = Math.floor(Math.random() * availableNumbers.length);
+  //     const newNumber = availableNumbers[randomIndex];
+
+  //     console.log(`Selected number: ${newNumber}`);
+
+  //     // Display the corresponding phrase
+  //     const phrase = numberPhrases[newNumber];
+  //     console.log(`Phrase for number ${newNumber}: ${phrase}`);
+  //     setCurrentPhrase(phrase);
+  //     speakPhrase(phrase);
+
+  //     const { error } = await supabase.from("called_numbers").insert({
+  //       room_id: roomId,
+  //       number: newNumber,
+  //     });
+
+  //     if (error) {
+  //       console.error("Error calling number:", error);
+  //       toast.error("Failed to call number. Please try again.");
+  //       return;
+  //     }
+
+  //     setLastCalledNumber(newNumber);
+  //     setCalledNumbers((prev) => [...prev, newNumber]);
+
+  //     // Remove automatic marking here - this will now be handled by the subscription
+  //     // The subscription will respect the autoMarkEnabled setting
+
+  //     toast.success(`Number called: ${newNumber}`);
+  //   } catch (error) {
+  //     console.error("Error calling number:", error);
+  //     toast.error("Failed to call number. Please try again.");
+  //   }
+  // };
+
   const callNumber = async (): Promise<void> => {
     if (gameState !== "playing" || !roomId || currentPlayer?.isReady === false)
       return;
 
     try {
       console.log("Calling a number...");
+
+      // First, get all currently called numbers from the database to ensure we have the most up-to-date list
+      const { data: currentCalledNumbers, error: fetchError } = await supabase
+        .from("called_numbers")
+        .select("number")
+        .eq("room_id", roomId);
+
+      if (fetchError) {
+        console.error("Error fetching current called numbers:", fetchError);
+        toast.error("Failed to call number. Please try again.");
+        return;
+      }
+
+      // Extract just the numbers from the result
+      const dbCalledNumbers = currentCalledNumbers.map((item) => item.number);
+
+      // Create a set of all called numbers (combining local state and database)
+      const allCalledNumbersSet = new Set([
+        ...calledNumbers,
+        ...dbCalledNumbers,
+      ]);
+
+      // Get available numbers (numbers 1-90 that haven't been called yet)
       const allNumbers = Array.from({ length: 90 }, (_, i) => i + 1);
       const availableNumbers = allNumbers.filter(
-        (num) => !calledNumbers.includes(num)
+        (num) => !allCalledNumbersSet.has(num)
       );
 
       if (availableNumbers.length === 0) {
@@ -764,6 +844,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
 
+      // Get a random number from the available numbers
       const randomIndex = Math.floor(Math.random() * availableNumbers.length);
       const newNumber = availableNumbers[randomIndex];
 
@@ -775,22 +856,22 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
       setCurrentPhrase(phrase);
       speakPhrase(phrase);
 
+      // Try to insert the new called number
       const { error } = await supabase.from("called_numbers").insert({
         room_id: roomId,
         number: newNumber,
       });
 
       if (error) {
+        // If there's still a constraint error, it was likely called in another session
+        // We'll just log it and not show an error to the user
         console.error("Error calling number:", error);
-        toast.error("Failed to call number. Please try again.");
         return;
       }
 
+      // Update local state
       setLastCalledNumber(newNumber);
-      setCalledNumbers((prev) => [...prev, newNumber]);
-
-      // Remove automatic marking here - this will now be handled by the subscription
-      // The subscription will respect the autoMarkEnabled setting
+      setCalledNumbers((prev) => Array.from(new Set([...prev, newNumber])));
 
       toast.success(`Number called: ${newNumber}`);
     } catch (error) {
@@ -854,6 +935,56 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  // const claimPattern = async (pattern: string) => {
+  //   if (!currentPlayer || !roomId || !playerId) return;
+
+  //   try {
+  //     const existingClaim = winners.find(
+  //       (w) => w.pattern === pattern && w.player.id === currentPlayer.id
+  //     );
+
+  //     if (existingClaim) {
+  //       toast.error("You've already claimed this pattern!");
+  //       return;
+  //     }
+
+  //     // Check if the player has marked all numbers for Full House
+  //     if (pattern === "Full House") {
+  //       const ticket = tickets.find(
+  //         (t) =>
+  //           t.markedNumbers.length > 0 &&
+  //           t.markedNumbers.length === t.numbers.length
+  //       );
+  //       if (!ticket) {
+  //         toast.error("You need to mark all numbers to claim Full House.");
+  //         return;
+  //       }
+  //     }
+
+  //     const { error } = await supabase.from("winners").insert({
+  //       room_id: roomId,
+  //       player_id: playerId,
+  //       pattern: pattern,
+  //     });
+
+  //     if (error) {
+  //       console.error("Error claiming pattern:", error);
+  //       toast.error("Failed to claim pattern. Please try again.");
+  //       return;
+  //     }
+
+  //     setWinners((prev) => [...prev, { pattern, player: currentPlayer }]);
+  //     setLeaderboard((prev) => [
+  //       ...prev,
+  //       { playerName: currentPlayer.name, pattern },
+  //     ]);
+  //     toast.success(`Congratulations! You claimed the ${pattern} pattern.`);
+  //   } catch (error) {
+  //     console.error("Error claiming pattern:", error);
+  //     toast.error("Failed to claim pattern. Please try again.");
+  //   }
+  // };
+
   const claimPattern = async (pattern: string) => {
     if (!currentPlayer || !roomId || !playerId) return;
 
@@ -867,17 +998,55 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
 
-      // Check if the player has marked all numbers for Full House
+      // Get the player's ticket
+      const playerTicket = tickets[0]; // Assuming one ticket per player
+      if (!playerTicket) {
+        toast.error("No ticket found.");
+        return;
+      }
+
+      // Check if the pattern is valid based on marked numbers
+      let isValidClaim = false;
+
       if (pattern === "Full House") {
-        const ticket = tickets.find(
-          (t) =>
-            t.markedNumbers.length > 0 &&
-            t.markedNumbers.length === t.numbers.length
+        // Count all non-null numbers on the ticket
+        const totalNumbers = playerTicket.numbers
+          .flat()
+          .filter((num) => num !== null).length;
+        // Check if all numbers are marked
+        isValidClaim = playerTicket.markedNumbers.length >= totalNumbers;
+      } else if (pattern === "Early Five") {
+        // For Early Five, just check if at least 5 numbers are marked
+        isValidClaim = playerTicket.markedNumbers.length >= 5;
+      } else if (pattern === "Top Line") {
+        // Check if all numbers in the top row are marked
+        const topRowNumbers = playerTicket.numbers[0].filter(
+          (num) => num !== null
         );
-        if (!ticket) {
-          toast.error("You need to mark all numbers to claim Full House.");
-          return;
-        }
+        isValidClaim = topRowNumbers.every((num) =>
+          playerTicket.markedNumbers.includes(num as number)
+        );
+      } else if (pattern === "Middle Line") {
+        // Check if all numbers in the middle row are marked
+        const middleRowNumbers = playerTicket.numbers[1].filter(
+          (num) => num !== null
+        );
+        isValidClaim = middleRowNumbers.every((num) =>
+          playerTicket.markedNumbers.includes(num as number)
+        );
+      } else if (pattern === "Bottom Line") {
+        // Check if all numbers in the bottom row are marked
+        const bottomRowNumbers = playerTicket.numbers[2].filter(
+          (num) => num !== null
+        );
+        isValidClaim = bottomRowNumbers.every((num) =>
+          playerTicket.markedNumbers.includes(num as number)
+        );
+      }
+
+      if (!isValidClaim) {
+        toast.error(`You haven't completed the ${pattern} pattern yet.`);
+        return;
       }
 
       const { error } = await supabase.from("winners").insert({
