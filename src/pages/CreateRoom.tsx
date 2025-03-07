@@ -1,8 +1,13 @@
 import React from "react";
 import { motion } from "framer-motion";
 import CreateRoomForm from "@/components/game/CreateRoomForm";
+import { useLocation } from "react-router-dom";
 
 const CreateRoom: React.FC = () => {
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const roomCode = queryParams.get("roomCode") || "";
+
   return (
     <div className="relative bg-gradient-to-r from-purple-500 to-blue-500 min-h-screen py-12">
       <div className="absolute inset-0 opacity-80"></div>
@@ -12,7 +17,7 @@ const CreateRoom: React.FC = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <CreateRoomForm />
+        <CreateRoomForm roomCode={roomCode} />
       </motion.div>
     </div>
   );

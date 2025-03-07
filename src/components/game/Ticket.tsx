@@ -204,7 +204,7 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
     roomSettings,
     claimPattern,
     playerName,
-    leaderboard,
+    leaderboard = [],
     players,
     winners,
     latestCalledNumber,

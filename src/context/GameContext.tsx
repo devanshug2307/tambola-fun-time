@@ -57,6 +57,7 @@ interface GameContextType {
   >;
   setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
   roomUrl: string | null;
+  generateClientRoomCode: () => string;
 }
 
 const defaultContext: GameContextType = {
@@ -81,6 +82,7 @@ const defaultContext: GameContextType = {
   setLeaderboard: () => {},
   setPlayers: () => {},
   roomUrl: null,
+  generateClientRoomCode: () => "",
 };
 
 const GameContext = createContext<GameContextType>(defaultContext);
@@ -561,7 +563,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
       const roomUrl = `http://yourgameurl.com/join/${roomData.code}`;
       setRoomUrl(roomUrl);
 
-      return roomUrl;
+      return roomData.code;
     } catch (error) {
       console.error("Error creating room:", error);
       toast.error("Failed to create room. Please try again.");
@@ -1006,6 +1008,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         setLeaderboard,
         setPlayers,
         roomUrl,
+        generateClientRoomCode,
       }}
     >
       {children}

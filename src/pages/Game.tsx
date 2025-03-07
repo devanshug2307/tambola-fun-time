@@ -32,7 +32,7 @@ const Game = () => {
     calledNumbers,
     leaveRoom,
     currentPlayer,
-    leaderboard,
+    leaderboard = [],
   } = useGameContext();
 
   const [isPlaying, setIsPlaying] = useState(false);

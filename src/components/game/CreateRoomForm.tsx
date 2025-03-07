@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { useNavigate, Link } from "react-router-dom";
@@ -13,11 +13,17 @@ import {
   ChevronLeft,
 } from "lucide-react";
 
-const CreateRoomForm: React.FC = () => {
+interface CreateRoomFormProps {
+  roomCode: string;
+}
+
+const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ roomCode }) => {
   const navigate = useNavigate();
   const { createRoom } = useGameContext();
   const [isCreating, setIsCreating] = useState(false);
   const [joinLink, setJoinLink] = useState<string | null>(null);
+  const [createdRoomCode, setCreatedRoomCode] = useState<string>("");
+  const [roomCreated, setRoomCreated] = useState(false);
 
   const [formData, setFormData] = useState({
     numberCallSpeed: 10,
@@ -25,10 +31,19 @@ const CreateRoomForm: React.FC = () => {
 
   // Predefined speed options
   const speedOptions = [
+    { value: 1, label: "1 sec" },
+    { value: 5, label: "5 secs" },
     { value: 7, label: "7 secs" },
     { value: 10, label: "10 secs" },
     { value: 15, label: "15 secs" },
   ];
+
+  // Create room when component mounts
+  useEffect(() => {
+    if (roomCode && !roomCreated) {
+      handleCreateRoom();
+    }
+  }, [roomCode]);
 
   const handleSpeedChange = (speed: number) => {
     setFormData((prev) => ({
@@ -37,21 +52,33 @@ const CreateRoomForm: React.FC = () => {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsCreating(true);
+  const handleCreateRoom = async () => {
+    if (roomCreated) return;
 
+    setIsCreating(true);
     try {
-      const roomCode = await createRoom({
+      const createdCode = await createRoom({
+        roomCode: roomCode,
         numberCallSpeed: formData.numberCallSpeed,
       });
-      setJoinLink(`${window.location.origin}/join/${roomCode}`);
-      toast.success(`Room created! Room code: ${roomCode}`);
-      navigate("/game");
+
+      setCreatedRoomCode(createdCode);
+      setJoinLink(`${window.location.origin}/join/${createdCode}`);
+      setRoomCreated(true);
+      toast.success(`Room created! Room code: ${createdCode}`);
     } catch (error) {
       console.error("Error creating room:", error);
       toast.error("Failed to create room. Please try again.");
+    } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleStartGame = () => {
+    if (roomCreated) {
+      navigate("/game");
+    } else {
+      toast.error("Room not created yet. Please try again.");
     }
   };
 
@@ -104,7 +131,70 @@ const CreateRoomForm: React.FC = () => {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Room Code Display at the top */}
+        {roomCreated && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-gradient-to-r from-purple-100 to-pink-100 p-5 text-center border-b border-purple-200"
+          >
+            <p className="text-green-800 font-medium mb-2">
+              Room Created Successfully!
+            </p>
+
+            {/* Enhanced Room Code Display */}
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white rounded-xl p-4 shadow-lg border-2 border-purple-300 mx-auto max-w-xs"
+            >
+              <p className="text-gray-500 text-xs uppercase font-semibold tracking-wider mb-1">
+                Room Code
+              </p>
+              <div className="flex items-center justify-center">
+                <motion.h3
+                  className="text-5xl font-bold text-purple-700 tracking-wider"
+                  initial={{ y: 5 }}
+                  animate={{ y: 0 }}
+                  transition={{ duration: 0.5, type: "spring" }}
+                >
+                  {createdRoomCode}
+                </motion.h3>
+              </div>
+            </motion.div>
+
+            {/* Copy Link Button */}
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                navigator.clipboard.writeText(joinLink || "");
+                toast.success("Join link copied to clipboard!");
+              }}
+              className="mt-3 py-2 px-4 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-full text-sm font-medium flex items-center mx-auto"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
+              </svg>
+              Copy Join Link
+            </motion.button>
+          </motion.div>
+        )}
+
+        <div className="p-6 space-y-6">
           {/* Animated number ball */}
           <div className="flex justify-center -mt-12">
             <motion.div
@@ -175,9 +265,9 @@ const CreateRoomForm: React.FC = () => {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            type="submit"
+            onClick={handleStartGame}
             className="w-full py-4 bg-gradient-to-r from-yellow-400 to-yellow-500 text-xl font-bold text-white rounded-lg hover:from-yellow-500 hover:to-yellow-600 transition-colors uppercase shadow-md flex items-center justify-center"
-            disabled={isCreating}
+            disabled={isCreating || !roomCreated}
           >
             {isCreating ? (
               <div className="flex items-center">
@@ -190,7 +280,7 @@ const CreateRoomForm: React.FC = () => {
               </div>
             ) : (
               <div className="flex items-center">
-                START GAME!
+                START GAME
                 <ArrowRight className="ml-2" size={20} />
               </div>
             )}
@@ -225,25 +315,7 @@ const CreateRoomForm: React.FC = () => {
               New to Tambola? Learn how to play
             </Link>
           </motion.div>
-        </form>
-
-        {joinLink && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            className="bg-green-50 p-4 text-center border-t border-green-100"
-          >
-            <p className="text-green-800 font-medium">
-              Room Created Successfully!
-            </p>
-            <p className="text-gray-700 text-sm mt-1">
-              Room Code:{" "}
-              <span className="font-bold text-purple-700">
-                {joinLink.split("/").pop()}
-              </span>
-            </p>
-          </motion.div>
-        )}
+        </div>
       </motion.div>
     </div>
   );

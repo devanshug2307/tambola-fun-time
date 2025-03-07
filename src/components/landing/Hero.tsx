@@ -21,13 +21,16 @@ import {
 
 // Import the sound file
 import tambolaSound from "../../assets/sounds/Tambola Time.mp3";
+import { useGameContext } from "@/context/GameContext";
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const { generateClientRoomCode } = useGameContext();
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [audio] = useState(new Audio(tambolaSound));
   const [randomNumber, setRandomNumber] = useState<number>(42);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [roomCode, setRoomCode] = useState<string>("");
 
   const playSound = () => {
     audio.currentTime = 13;
@@ -37,6 +40,10 @@ const Home: React.FC = () => {
   };
 
   useEffect(() => {
+    // Generate a room code when component mounts
+    const generatedRoomCode = generateClientRoomCode();
+    setRoomCode(generatedRoomCode);
+
     // Play the sound when the component mounts
     audio.currentTime = 13;
     audio.play().catch((error) => {
@@ -67,7 +74,7 @@ const Home: React.FC = () => {
       window.removeEventListener("click", handleUserInteraction);
       clearInterval(intervalId);
     };
-  }, [audio]);
+  }, [audio, generateClientRoomCode]);
 
   // Animation Variants
   const containerVariants = {
@@ -118,7 +125,7 @@ const Home: React.FC = () => {
       move: {
         enable: true,
         speed: 1.5,
-        direction: "top",
+        direction: "none",
         random: false,
         straight: false,
         out_mode: "out",
@@ -261,7 +268,7 @@ const Home: React.FC = () => {
               <ButtonCustom
                 variant="primary"
                 size="lg"
-                onClick={() => navigate("/create-room")}
+                onClick={() => navigate(`/create-room?roomCode=${roomCode}`)}
                 className="group bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium py-3 px-8 rounded-full shadow-md transition-all duration-300 flex items-center"
               >
                 Create Room
@@ -399,7 +406,7 @@ const Home: React.FC = () => {
             <ButtonCustom
               variant="primary"
               size="lg"
-              onClick={() => navigate("/create-room")}
+              onClick={() => navigate(`/create-room?roomCode=${roomCode}`)}
               className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-full shadow-xl flex items-center justify-center w-16 h-16 hover:scale-110 transition-all duration-300"
             >
               <Play className="w-8 h-8" />
