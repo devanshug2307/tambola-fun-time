@@ -1,9 +1,16 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ButtonCustom } from "@/components/ui/button-custom";
 import { useGameContext } from "@/context/GameContext";
 import { toast } from "sonner";
+import {
+  ArrowRight,
+  Clock,
+  Users,
+  Trophy,
+  HelpCircle,
+  ChevronLeft,
+} from "lucide-react";
 
 const CreateRoomForm: React.FC = () => {
   const navigate = useNavigate();
@@ -12,66 +19,30 @@ const CreateRoomForm: React.FC = () => {
   const [joinLink, setJoinLink] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    ticketPrice: 5,
     numberCallSpeed: 10,
-    winningPatterns: {
-      earlyFive: true,
-      topLine: true,
-      middleLine: true,
-      bottomLine: true,
-      fullHouse: true,
-    },
   });
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value, type } = e.target as HTMLInputElement;
+  // Predefined speed options
+  const speedOptions = [
+    { value: 7, label: "7 secs" },
+    { value: 10, label: "10 secs" },
+    { value: 15, label: "15 secs" },
+  ];
 
+  const handleSpeedChange = (speed: number) => {
     setFormData((prev) => ({
       ...prev,
-      [name]:
-        type === "checkbox"
-          ? (e.target as HTMLInputElement).checked
-          : type === "number"
-          ? parseInt(value)
-          : value,
-    }));
-  };
-
-  const handlePatternChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      winningPatterns: {
-        ...prev.winningPatterns,
-        [name]: checked,
-      },
+      numberCallSpeed: speed,
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Make sure at least one winning pattern is selected
-    const hasSelectedPattern = Object.values(formData.winningPatterns).some(
-      (pattern) => pattern
-    );
-
-    if (!hasSelectedPattern) {
-      toast.error("Please select at least one winning pattern.");
-      return;
-    }
-
     setIsCreating(true);
 
     try {
       const roomCode = await createRoom({
         numberCallSpeed: formData.numberCallSpeed,
-        winningPatterns: Object.keys(formData.winningPatterns).filter(
-          (key) => formData.winningPatterns[key]
-        ),
       });
       setJoinLink(`${window.location.origin}/join/${roomCode}`);
       toast.success(`Room created! Room code: ${roomCode}`);
@@ -84,117 +55,189 @@ const CreateRoomForm: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center p-4">
+    <div className="relative min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-purple-600 to-pink-500">
+      {/* Animated circles in background */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
+        className="absolute top-10 right-10 w-24 h-24 rounded-full bg-white opacity-20"
+        animate={{
+          y: [0, -15, 0],
+          scale: [1, 1.05, 1],
+        }}
+        transition={{
+          repeat: Infinity,
+          duration: 5,
+          ease: "easeInOut",
+        }}
+      />
+      <motion.div
+        className="absolute bottom-20 left-10 w-16 h-16 rounded-full bg-yellow-300 opacity-20"
+        animate={{
+          y: [0, 10, 0],
+          scale: [1, 1.1, 1],
+        }}
+        transition={{
+          repeat: Infinity,
+          duration: 4,
+          ease: "easeInOut",
+        }}
+      />
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative w-full max-w-md bg-white rounded-2xl shadow-lg border-4 border-purple-700 overflow-hidden"
+        className="relative w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden"
       >
-        <div className="bg-purple-700 p-6 text-center">
-          <h2 className="text-3xl font-bold text-white drop-shadow-md">
+        {/* Header with gradient */}
+        <div className="bg-gradient-to-r from-purple-600 to-pink-500 p-6 text-center">
+          <motion.h2
+            initial={{ scale: 0.9 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="text-3xl font-bold text-white drop-shadow-md"
+          >
             Create Tambola Room
-          </h2>
-          <p className="text-white/80 mt-2">
-            Set up your exciting Tambola game!
+          </motion.h2>
+          <p className="text-white/90 mt-2">
+            Set up your exciting game and invite friends!
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="space-y-4">
-            <div className="bg-gray-100 rounded-lg p-4 shadow-inner">
+          {/* Animated number ball */}
+          <div className="flex justify-center -mt-12">
+            <motion.div
+              initial={{ y: -50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg flex items-center justify-center text-white font-bold text-2xl"
+            >
+              {formData.numberCallSpeed}
+            </motion.div>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="bg-purple-50 rounded-lg p-5 shadow-inner"
+          >
+            <div className="flex items-center mb-3">
+              <Clock className="text-purple-600 mr-2" size={18} />
               <label
                 htmlFor="numberCallSpeed"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="text-sm font-medium text-gray-700"
               >
-                Number Call Speed
+                Number Interval
               </label>
-              <input
-                type="range"
-                id="numberCallSpeed"
-                name="numberCallSpeed"
-                min="1"
-                max="30"
-                step="1"
-                value={formData.numberCallSpeed}
-                onChange={handleChange}
-                className="w-full h-2 bg-purple-700/30 rounded-full appearance-none cursor-pointer"
-                disabled={isCreating}
-              />
-              <div className="flex justify-between text-xs text-gray-700 mt-2">
-                <span>Fast (5s)</span>
-                <span className="font-bold">{formData.numberCallSpeed}s</span>
-                <span>Slow (30s)</span>
-              </div>
             </div>
-          </div>
 
-          <div>
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">
-              Winning Patterns
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { id: "earlyFive", label: "Early Five" },
-                { id: "topLine", label: "Top Line" },
-                { id: "middleLine", label: "Middle Line" },
-                { id: "bottomLine", label: "Bottom Line" },
-                { id: "fullHouse", label: "Full House" },
-              ].map((pattern) => (
-                <div
-                  key={pattern.id}
-                  className="flex items-center bg-gray-100 rounded-lg p-3 shadow-inner"
+            <div className="flex gap-2 justify-between">
+              {speedOptions.map((option) => (
+                <motion.button
+                  key={option.value}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="button"
+                  className={`py-2 px-4 rounded-full flex-1 transition-colors ${
+                    formData.numberCallSpeed === option.value
+                      ? "bg-yellow-500 text-white font-medium shadow-md"
+                      : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                  }`}
+                  onClick={() => handleSpeedChange(option.value)}
+                  disabled={isCreating}
                 >
-                  <input
-                    type="checkbox"
-                    id={pattern.id}
-                    name={pattern.id}
-                    checked={
-                      formData.winningPatterns[
-                        pattern.id as keyof typeof formData.winningPatterns
-                      ]
-                    }
-                    onChange={handlePatternChange}
-                    className="h-5 w-5 text-purple-700 focus:ring-purple-700 border-gray-300 rounded"
-                    disabled={isCreating}
-                  />
-                  <label
-                    htmlFor={pattern.id}
-                    className="ml-3 text-sm text-gray-700"
-                  >
-                    {pattern.label}
-                  </label>
-                </div>
+                  {option.label}
+                </motion.button>
               ))}
             </div>
-          </div>
+          </motion.div>
 
-          <div className="flex justify-between space-x-4">
-            <button
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="text-center text-sm text-purple-600 bg-purple-50 rounded-lg p-4"
+          >
+            <div className="flex items-center justify-center space-x-6">
+              <div className="flex items-center">
+                <Users size={16} className="mr-1" />
+                <span>1000+ Players</span>
+              </div>
+              <div className="flex items-center">
+                <Trophy size={16} className="mr-1" />
+                <span>500+ Winners</span>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            type="submit"
+            className="w-full py-4 bg-gradient-to-r from-yellow-400 to-yellow-500 text-xl font-bold text-white rounded-lg hover:from-yellow-500 hover:to-yellow-600 transition-colors uppercase shadow-md flex items-center justify-center"
+            disabled={isCreating}
+          >
+            {isCreating ? (
+              <div className="flex items-center">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="mr-2 w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                />
+                Creating Room...
+              </div>
+            ) : (
+              <div className="flex items-center">
+                START GAME!
+                <ArrowRight className="ml-2" size={20} />
+              </div>
+            )}
+          </motion.button>
+
+          <div className="flex justify-center">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
               type="button"
-              className="w-full px-4 py-2 text-purple-700 border border-purple-700 rounded-lg hover:bg-purple-50 transition-colors"
+              onClick={() => navigate("/")}
+              className="flex items-center text-purple-600 text-sm font-medium"
               disabled={isCreating}
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="w-full px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800 transition-colors"
-              disabled={isCreating}
-            >
-              {isCreating ? "Creating Room..." : "Create Room"}
-            </button>
+              <ChevronLeft size={16} />
+              Back to Home
+            </motion.button>
           </div>
         </form>
 
         {joinLink && (
-          <div className="bg-gray-100 p-4 text-center">
-            <p className="text-gray-700">
-              Room Code:{" "}
-              <span className="font-bold text-purple-700">{joinLink}</span>
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="bg-green-50 p-4 text-center border-t border-green-100"
+          >
+            <p className="text-green-800 font-medium">
+              Room Created Successfully!
             </p>
-          </div>
+            <p className="text-gray-700 text-sm mt-1">
+              Room Code:{" "}
+              <span className="font-bold text-purple-700">
+                {joinLink.split("/").pop()}
+              </span>
+            </p>
+          </motion.div>
         )}
+
+        <div className="p-3 text-center border-t">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            type="button"
+            className="text-sm text-purple-600 flex items-center justify-center mx-auto"
+          >
+            <HelpCircle size={14} className="mr-1" />
+            New to Tambola? Learn how to play
+          </motion.button>
+        </div>
       </motion.div>
     </div>
   );

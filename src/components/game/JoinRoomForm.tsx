@@ -16,10 +16,20 @@ const JoinRoomForm: React.FC = () => {
   const [isJoining, setIsJoining] = useState(false);
 
   // Auto-focus the first empty field when component mounts
+  // useEffect(() => {
+  //   const firstEmptyField = roomCode ? "playerName" : "roomCode";
+  //   document.getElementById(firstEmptyField)?.focus();
+  // }, [roomCode]);
+  // Replace the current useEffect with this:
   useEffect(() => {
-    const firstEmptyField = roomCode ? "playerName" : "roomCode";
-    document.getElementById(firstEmptyField)?.focus();
-  }, [roomCode]);
+    // Only focus on component mount, not when values change
+    if (!roomCodeFromParams) {
+      document.getElementById("roomCode")?.focus();
+    } else {
+      document.getElementById("playerName")?.focus();
+    }
+    // Empty dependency array means this only runs once on mount
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
