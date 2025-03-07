@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import Tilt from "react-parallax-tilt";
@@ -17,6 +17,8 @@ import {
   Gift,
   HelpCircle,
   ArrowRight,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 
 // Import the sound file
@@ -27,35 +29,93 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const { generateClientRoomCode } = useGameContext();
   const [activeStep, setActiveStep] = useState<number | null>(null);
-  const [audio] = useState(new Audio(tambolaSound));
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [audioInitialized, setAudioInitialized] = useState<boolean>(false);
   const [randomNumber, setRandomNumber] = useState<number>(42);
   const [showTooltip, setShowTooltip] = useState(false);
   const [roomCode, setRoomCode] = useState<string>("");
 
-  const playSound = () => {
-    audio.currentTime = 13;
-    audio.play().catch((error) => {
-      console.error("Error playing sound:", error);
-    });
+  // Initialize audio only once
+  useEffect(() => {
+    if (audioInitialized) return;
+
+    // Create audio element only once
+    if (!audioRef.current) {
+      audioRef.current = new Audio(tambolaSound);
+
+      // Set up event listeners
+      const audio = audioRef.current;
+
+      const handlePlay = () => {
+        console.log("Audio played");
+        setIsPlaying(true);
+      };
+
+      const handlePause = () => {
+        console.log("Audio paused");
+        setIsPlaying(false);
+      };
+
+      const handleEnded = () => {
+        console.log("Audio ended");
+        setIsPlaying(false);
+      };
+
+      audio.addEventListener("play", handlePlay);
+      audio.addEventListener("pause", handlePause);
+      audio.addEventListener("ended", handleEnded);
+
+      // Try to autoplay once
+      audio.currentTime = 13;
+      audio.play().catch((error) => {
+        console.error("Autoplay failed:", error);
+      });
+
+      setAudioInitialized(true);
+    }
+
+    return () => {
+      // Clean up only when component unmounts
+      const audio = audioRef.current;
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+
+        // Remove event listeners
+        const handlePlay = () => setIsPlaying(true);
+        const handlePause = () => setIsPlaying(false);
+        const handleEnded = () => setIsPlaying(false);
+
+        audio.removeEventListener("play", handlePlay);
+        audio.removeEventListener("pause", handlePause);
+        audio.removeEventListener("ended", handleEnded);
+      }
+    };
+  }, [audioInitialized]);
+
+  const toggleSound = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    console.log("Toggle sound called, current state:", isPlaying);
+
+    if (isPlaying) {
+      console.log("Pausing audio");
+      audio.pause();
+    } else {
+      console.log("Playing audio");
+      audio.currentTime = 13;
+      audio.play().catch((error) => {
+        console.error("Play failed:", error);
+      });
+    }
   };
 
   useEffect(() => {
     // Generate a room code when component mounts
     const generatedRoomCode = generateClientRoomCode();
     setRoomCode(generatedRoomCode);
-
-    // Play the sound when the component mounts
-    audio.currentTime = 13;
-    audio.play().catch((error) => {
-      console.error("Error playing sound:", error);
-    });
-
-    // Handle user interaction for browsers that require it
-    const handleUserInteraction = () => {
-      audio.play();
-      window.removeEventListener("click", handleUserInteraction);
-    };
-    window.addEventListener("click", handleUserInteraction);
 
     // Random number generation every second
     const intervalId = setInterval(() => {
@@ -69,12 +129,9 @@ const Home: React.FC = () => {
     }, 2000);
 
     return () => {
-      audio.pause();
-      audio.currentTime = 0;
-      window.removeEventListener("click", handleUserInteraction);
       clearInterval(intervalId);
     };
-  }, [audio, generateClientRoomCode]);
+  }, [generateClientRoomCode]);
 
   // Animation Variants
   const containerVariants = {
@@ -190,6 +247,95 @@ const Home: React.FC = () => {
       />
 
       <div className="relative z-10 container mx-auto px-4 sm:px-6 py-12 flex flex-col items-center">
+        {/* Audio Control Button - Moved to bottom left */}
+        <motion.div
+          className="fixed bottom-6 left-6 z-20"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.5, type: "spring", stiffness: 120 }}
+        >
+          <motion.div
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            className={`relative rounded-full shadow-lg cursor-pointer overflow-hidden flex items-center justify-center w-10 h-10 transition-all duration-300 ${
+              isPlaying
+                ? "bg-gradient-to-r from-purple-500 to-pink-500"
+                : "bg-gray-200"
+            }`}
+            onClick={toggleSound}
+          >
+            {/* Background pulse animation when playing */}
+            {isPlaying && (
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 opacity-70"
+                animate={{
+                  scale: [1, 1.2, 1],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+            )}
+
+            {/* Icon */}
+            <motion.div
+              className="relative z-10"
+              animate={{
+                rotate: isPlaying ? [0, 5, -5, 0] : 0,
+                scale: isPlaying ? [1, 1.05, 1] : 1,
+              }}
+              transition={{
+                duration: isPlaying ? 2 : 0.3,
+                repeat: isPlaying ? Infinity : 0,
+                ease: "easeInOut",
+              }}
+            >
+              {isPlaying ? (
+                <Volume2 className="w-4 h-4 text-white" />
+              ) : (
+                <VolumeX className="w-4 h-4 text-gray-600" />
+              )}
+            </motion.div>
+
+            {/* Tooltip */}
+            <motion.div
+              className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-white px-2 py-1 rounded-md shadow-md text-xs whitespace-nowrap"
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 5 }}
+              transition={{ duration: 0.2 }}
+              style={{ pointerEvents: "none", opacity: 0 }}
+              whileHover={{ opacity: 1 }}
+            >
+              {isPlaying ? "Mute sound" : "Play sound"}
+            </motion.div>
+          </motion.div>
+
+          {/* Sound wave animation */}
+          {isPlaying && (
+            <motion.div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+              <div className="flex space-x-0.5">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="w-0.5 h-1 bg-purple-500 rounded-full"
+                    animate={{
+                      height: ["3px", `${3 + i * 2}px`, "3px"],
+                    }}
+                    transition={{
+                      duration: 0.8,
+                      repeat: Infinity,
+                      delay: i * 0.1,
+                    }}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </motion.div>
+
         {/* Ball with Random Number */}
         <motion.div
           className="mb-8 relative"
