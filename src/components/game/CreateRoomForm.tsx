@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { useNavigate, Link } from "react-router-dom";
 import { useGameContext } from "@/context/GameContext";

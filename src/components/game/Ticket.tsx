@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGameContext } from "@/context/GameContext";
 import "./Ticket.css";
@@ -7,6 +7,194 @@ import Leaderboard from "@/components/game/Leaderboard";
 interface TicketProps {
   ticketId: string;
 }
+
+interface ClaimButtonProps {
+  pattern: string;
+  icon: string;
+  color: string;
+  onClick: () => void;
+  disabled: boolean;
+}
+
+// Pattern button component with improved accessibility and visual feedback
+const ClaimButton: React.FC<ClaimButtonProps> = ({
+  pattern,
+  icon,
+  color,
+  onClick,
+  disabled,
+}) => {
+  // Map colors to Tailwind classes
+  const colorMap: Record<string, string> = {
+    pink: "bg-pink-500 hover:bg-pink-600",
+    blue: "bg-blue-500 hover:bg-blue-600",
+    green: "bg-green-500 hover:bg-green-600",
+    yellow: "bg-yellow-500 hover:bg-yellow-600",
+    purple: "bg-purple-500 hover:bg-purple-600",
+  };
+
+  return (
+    <motion.button
+      whileHover={{ scale: disabled ? 1 : 1.05 }}
+      whileTap={{ scale: disabled ? 1 : 0.95 }}
+      className={`flex items-center px-3 py-1.5 text-white text-xs rounded-md shadow-md 
+        ${disabled ? "bg-gray-400 cursor-not-allowed" : colorMap[color]} 
+        transition-colors duration-200`}
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={`Claim ${pattern}`}
+    >
+      <i className={`fas fa-${icon} mr-1`}></i> {pattern}
+      {disabled && <span className="ml-1 text-xs">(Claimed)</span>}
+    </motion.button>
+  );
+};
+
+// Memoized number cell component for better performance
+const NumberCell: React.FC<{
+  num: number | null;
+  rowIndex: number;
+  colIndex: number;
+  isMarked: boolean;
+  isCalled: boolean;
+  isAnimating: boolean;
+  onClick: () => void;
+  autoMarkEnabled: boolean;
+}> = React.memo(
+  ({
+    num,
+    rowIndex,
+    colIndex,
+    isMarked,
+    isCalled,
+    isAnimating,
+    onClick,
+    autoMarkEnabled,
+  }) => {
+    return (
+      <motion.div
+        key={`cell-${rowIndex}-${colIndex}`}
+        className={`relative flex items-center justify-center h-12 rounded-lg overflow-hidden
+          ${
+            num === null
+              ? "bg-gray-50"
+              : isMarked
+              ? "bg-white shadow-lg border-2 border-pink-500"
+              : "bg-white border border-gray-200 cursor-pointer hover:bg-gray-50"
+          }
+          transition-all duration-300 ease-in-out`}
+        onClick={onClick}
+        whileHover={num !== null && !isMarked ? { scale: 1.05 } : {}}
+        whileTap={{ scale: 0.95 }}
+        animate={
+          isAnimating
+            ? {
+                scale: [1, 1.2, 0.9, 1.1, 1],
+                borderColor: [
+                  "#E5E7EB",
+                  "#FBCFE8",
+                  "#F472B6",
+                  "#EC4899",
+                  "#DB2777",
+                ],
+                borderWidth: ["1px", "2px", "3px", "3px", "2px"],
+                transition: { duration: 0.8 },
+              }
+            : {}
+        }
+      >
+        {num !== null && (
+          <>
+            {isMarked ? (
+              <motion.div
+                className="flex items-center justify-center w-8 h-8 rounded-full bg-pink-500 text-white"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 500,
+                  damping: 30,
+                }}
+              >
+                <span className="text-sm font-bold">{num}</span>
+              </motion.div>
+            ) : (
+              <motion.span
+                className="text-sm font-medium text-gray-700"
+                animate={isAnimating ? { scale: [1, 1.3, 1] } : {}}
+                transition={{ duration: 0.3 }}
+              >
+                {num}
+              </motion.span>
+            )}
+
+            <AnimatePresence>
+              {isMarked && (
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 500,
+                    damping: 30,
+                  }}
+                  className="absolute inset-0 -z-10"
+                >
+                  {/* Subtle radial gradient behind marked numbers */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-pink-50 to-pink-100 rounded-lg -z-10" />
+
+                  {/* Decorative elements */}
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0.6 }}
+                    animate={{ scale: 1.5, opacity: 0 }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      repeatDelay: 1,
+                    }}
+                    className="absolute inset-0 border-2 border-pink-300 rounded-full -z-10"
+                    style={{
+                      left: "50%",
+                      top: "50%",
+                      x: "-50%",
+                      y: "-50%",
+                    }}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {isCalled && !isMarked && autoMarkEnabled === false && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute top-1 right-1"
+                >
+                  <motion.div
+                    className="w-2 h-2 rounded-full bg-amber-500"
+                    animate={{
+                      scale: [1, 1.5, 1],
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      repeatType: "reverse",
+                    }}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        )}
+      </motion.div>
+    );
+  }
+);
+
+NumberCell.displayName = "NumberCell";
 
 const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
   const {
@@ -19,84 +207,124 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
     leaderboard,
     players,
     winners,
+    latestCalledNumber,
   } = useGameContext();
   const [animatingCell, setAnimatingCell] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [messageType, setMessageType] = useState<"error" | "success" | "info">(
+    "info"
+  );
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
   const [claimedPattern, setClaimedPattern] = useState<string | null>(null);
+  const [nextNumberTimer, setNextNumberTimer] = useState<number | null>(null);
 
   const ticket = tickets.find((t) => t.id === ticketId);
 
   if (!ticket) return null;
 
-  const handleNumberClick = (num: number | null) => {
-    if (num === null || !calledNumbers.includes(num)) return;
+  // Get list of patterns that have already been claimed
+  const claimedPatterns = winners.map((w) => w.pattern);
 
-    // Only mark if the number has been called and not already marked
-    if (!ticket.markedNumbers.includes(num)) {
-      setAnimatingCell(`${num}`);
-      setTimeout(() => setAnimatingCell(null), 800); // Extended animation time
-      markNumber(ticketId, num);
+  // Calculate next number call time if available from roomSettings
+  useEffect(() => {
+    if (roomSettings?.numberInterval && roomSettings.gameActive) {
+      const interval = setInterval(() => {
+        const elapsed = Date.now() - (roomSettings.lastNumberCalledTime || 0);
+        const remaining = Math.max(
+          0,
+          Math.floor((roomSettings.numberInterval * 1000 - elapsed) / 1000)
+        );
+        setNextNumberTimer(remaining);
+      }, 1000);
+
+      return () => clearInterval(interval);
+    } else {
+      setNextNumberTimer(null);
     }
-  };
+  }, [roomSettings]);
 
-  const handleClaimPattern = (pattern: string) => {
-    const markedCount = ticket.markedNumbers.length;
-    const isPatternClaimed = winners.some((w) => w.pattern === pattern);
+  const handleNumberClick = useCallback(
+    (num: number | null) => {
+      if (num === null || !calledNumbers.includes(num)) return;
 
-    if (isPatternClaimed) {
-      setMessage("This prize has already been claimed by another user.");
-      return;
-    }
+      // Only mark if the number has been called and not already marked
+      if (!ticket.markedNumbers.includes(num)) {
+        setAnimatingCell(`${num}`);
+        setTimeout(() => setAnimatingCell(null), 800); // Extended animation time
+        markNumber(ticketId, num);
+      }
+    },
+    [ticketId, calledNumbers, ticket.markedNumbers, markNumber]
+  );
 
-    // Check if the pattern is valid based on marked numbers
-    let isValidClaim = false;
+  const handleClaimPattern = useCallback(
+    (pattern: string) => {
+      const markedCount = ticket.markedNumbers.length;
+      const isPatternClaimed = winners.some((w) => w.pattern === pattern);
 
-    if (pattern === "Full House") {
-      // Count all non-null numbers on the ticket
-      const totalNumbers = ticket.numbers
-        .flat()
-        .filter((num) => num !== null).length;
-      // Check if all numbers are marked
-      isValidClaim = ticket.markedNumbers.length >= totalNumbers;
-    } else if (pattern === "Early 5" && markedCount >= 5) {
-      isValidClaim = true;
-    } else if (pattern === "Top Line") {
-      // Check if all numbers in the top row are marked
-      const topRowNumbers = ticket.numbers[0].filter((num) => num !== null);
-      isValidClaim = topRowNumbers.every((num) =>
-        ticket.markedNumbers.includes(num as number)
-      );
-    } else if (pattern === "Middle Line") {
-      // Check if all numbers in the middle row are marked
-      const middleRowNumbers = ticket.numbers[1].filter((num) => num !== null);
-      isValidClaim = middleRowNumbers.every((num) =>
-        ticket.markedNumbers.includes(num as number)
-      );
-    } else if (pattern === "Bottom Line") {
-      // Check if all numbers in the bottom row are marked
-      const bottomRowNumbers = ticket.numbers[2].filter((num) => num !== null);
-      isValidClaim = bottomRowNumbers.every((num) =>
-        ticket.markedNumbers.includes(num as number)
-      );
-    }
+      if (isPatternClaimed) {
+        setMessage(`This prize has already been claimed by another user.`);
+        setMessageType("error");
+        return;
+      }
 
-    if (!isValidClaim) {
-      setMessage(`You haven't completed the ${pattern} pattern yet.`);
-      return;
-    }
+      // Check if the pattern is valid based on marked numbers
+      let isValidClaim = false;
 
-    // Trigger celebration animation
-    setClaimedPattern(pattern);
-    setShowCelebration(true);
+      if (pattern === "Full House") {
+        // Count all non-null numbers on the ticket
+        const totalNumbers = ticket.numbers
+          .flat()
+          .filter((num) => num !== null).length;
+        // Check if all numbers are marked
+        isValidClaim = ticket.markedNumbers.length >= totalNumbers;
+      } else if (pattern === "Early 5" && markedCount >= 5) {
+        isValidClaim = true;
+      } else if (pattern === "Top Line") {
+        // Check if all numbers in the top row are marked
+        const topRowNumbers = ticket.numbers[0].filter((num) => num !== null);
+        isValidClaim = topRowNumbers.every((num) =>
+          ticket.markedNumbers.includes(num as number)
+        );
+      } else if (pattern === "Middle Line") {
+        // Check if all numbers in the middle row are marked
+        const middleRowNumbers = ticket.numbers[1].filter(
+          (num) => num !== null
+        );
+        isValidClaim = middleRowNumbers.every((num) =>
+          ticket.markedNumbers.includes(num as number)
+        );
+      } else if (pattern === "Bottom Line") {
+        // Check if all numbers in the bottom row are marked
+        const bottomRowNumbers = ticket.numbers[2].filter(
+          (num) => num !== null
+        );
+        isValidClaim = bottomRowNumbers.every((num) =>
+          ticket.markedNumbers.includes(num as number)
+        );
+      }
 
-    // Hide celebration after 4 seconds
-    setTimeout(() => {
-      setShowCelebration(false);
-    }, 4000);
+      if (!isValidClaim) {
+        setMessage(`You haven't completed the ${pattern} pattern yet.`);
+        setMessageType("error");
+        return;
+      }
 
-    claimPattern(pattern);
-  };
+      // Trigger celebration animation
+      setClaimedPattern(pattern);
+      setShowCelebration(true);
+      setMessage(`Congratulations! You've claimed ${pattern}!`);
+      setMessageType("success");
+
+      // Hide celebration after 4 seconds
+      setTimeout(() => {
+        setShowCelebration(false);
+      }, 4000);
+
+      claimPattern(pattern);
+    },
+    [ticket, winners, claimPattern]
+  );
 
   useEffect(() => {
     if (message) {
@@ -105,8 +333,22 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
     }
   }, [message]);
 
+  // Alert about latest called number with visual feedback
+  useEffect(() => {
+    if (latestCalledNumber && calledNumbers.includes(latestCalledNumber)) {
+      const numberExists = ticket.numbers
+        .flat()
+        .some((num) => num === latestCalledNumber);
+
+      if (numberExists) {
+        setMessage(`Number ${latestCalledNumber} is on your ticket!`);
+        setMessageType("info");
+      }
+    }
+  }, [latestCalledNumber]);
+
   // Generate confetti/flower petals for the celebration
-  const generateConfetti = () => {
+  const generateConfetti = useMemo(() => {
     const confetti = [];
     const colors = [
       "#FF77FF", // Pink
@@ -166,22 +408,53 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
     }
 
     return confetti;
-  };
+  }, []);
 
   return (
-    <div className="tambola-ticket max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden relative">
-      {message && (
-        <AnimatePresence>
+    <div className="tambola-ticket max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden relative">
+      {/* Latest number call notification and timer */}
+      {latestCalledNumber && (
+        <div className="bg-gradient-to-r from-violet-500 to-pink-500 text-white p-1 text-center shadow-md">
+          <div className="flex justify-center items-center gap-2">
+            <motion.div
+              className="bg-white text-pink-600 font-bold rounded-full w-10 h-10 flex items-center justify-center"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", damping: 12 }}
+            >
+              {latestCalledNumber}
+            </motion.div>
+            <span className="text-sm">Called!</span>
+
+            {nextNumberTimer !== null && (
+              <div className="ml-2 text-xs">
+                Next number in:{" "}
+                <span className="font-bold">{nextNumberTimer}s</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Toast Messages */}
+      <AnimatePresence>
+        {message && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="bg-red-500 text-white p-2 rounded-md mb-4 mx-4 mt-4 text-center shadow-lg"
+            className={`text-white p-2 rounded-md m-4 text-center shadow-lg ${
+              messageType === "error"
+                ? "bg-red-500"
+                : messageType === "success"
+                ? "bg-green-500"
+                : "bg-blue-500"
+            }`}
           >
             {message}
           </motion.div>
-        </AnimatePresence>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Winner Celebration Overlay */}
       <AnimatePresence>
@@ -195,7 +468,7 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
             style={{ perspective: "1000px" }}
           >
             {/* Confetti/Flower petals */}
-            {generateConfetti()}
+            {generateConfetti}
 
             {/* Congratulations message */}
             <motion.div
@@ -252,12 +525,27 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
         )}
       </AnimatePresence>
 
-      <div className="p-4 border-b border-gray-100">
+      {/* Ticket Header */}
+      <div className="p-3 border-b border-gray-100 flex justify-between items-center">
         <h3 className="text-lg font-semibold text-gray-900">Your Ticket</h3>
+        <div className="text-sm text-gray-600 bg-pink-50 px-3 py-1 rounded-full shadow-sm">
+          <span className="font-medium text-pink-500">
+            {ticket.markedNumbers.length}
+          </span>{" "}
+          marked
+        </div>
       </div>
 
+      {/* Quick Tip Text */}
+      <div className="px-4 py-1 bg-gray-50 text-xs text-gray-500 text-center">
+        {roomSettings?.autoMarkEnabled
+          ? "Numbers are marked automatically for you"
+          : "Tap called numbers to mark them"}
+      </div>
+
+      {/* Ticket Grid */}
       <div className="tambola-ticket-inner p-4">
-        <div className="grid grid-cols-9 gap-1">
+        <div className="grid grid-cols-9 gap-1 shadow-sm p-2 bg-gray-50 rounded-lg">
           {ticket.numbers.map((row, rowIndex) => (
             <React.Fragment key={`row-${rowIndex}`}>
               {row.map((num, colIndex) => {
@@ -267,128 +555,17 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
                 const isAnimating = animatingCell === `${num}`;
 
                 return (
-                  <motion.div
+                  <NumberCell
                     key={`cell-${rowIndex}-${colIndex}`}
-                    className={`relative flex items-center justify-center h-12 rounded-lg overflow-hidden
-                      ${
-                        num === null
-                          ? "bg-gray-50"
-                          : isMarked
-                          ? "bg-white shadow-lg border-2 border-pink-500"
-                          : "bg-white border border-gray-200 cursor-pointer hover:bg-gray-50"
-                      }
-                      transition-all duration-300 ease-in-out`}
+                    num={num}
+                    rowIndex={rowIndex}
+                    colIndex={colIndex}
+                    isMarked={isMarked}
+                    isCalled={isCalled}
+                    isAnimating={isAnimating}
                     onClick={() => num !== null && handleNumberClick(num)}
-                    whileHover={
-                      num !== null && !isMarked ? { scale: 1.05 } : {}
-                    }
-                    whileTap={{ scale: 0.95 }}
-                    animate={
-                      isAnimating
-                        ? {
-                            scale: [1, 1.2, 0.9, 1.1, 1],
-                            borderColor: [
-                              "#E5E7EB",
-                              "#FBCFE8",
-                              "#F472B6",
-                              "#EC4899",
-                              "#DB2777",
-                            ],
-                            borderWidth: ["1px", "2px", "3px", "3px", "2px"],
-                            transition: { duration: 0.8 },
-                          }
-                        : {}
-                    }
-                  >
-                    {num !== null && (
-                      <>
-                        {isMarked ? (
-                          <motion.div
-                            className="flex items-center justify-center w-8 h-8 rounded-full bg-pink-500 text-white"
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{
-                              type: "spring",
-                              stiffness: 500,
-                              damping: 30,
-                            }}
-                          >
-                            <span className="text-sm font-bold">{num}</span>
-                          </motion.div>
-                        ) : (
-                          <motion.span
-                            className="text-sm font-medium text-gray-700"
-                            animate={isAnimating ? { scale: [1, 1.3, 1] } : {}}
-                            transition={{ duration: 0.3 }}
-                          >
-                            {num}
-                          </motion.span>
-                        )}
-
-                        <AnimatePresence>
-                          {isMarked && (
-                            <motion.div
-                              initial={{ scale: 0, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              exit={{ scale: 0, opacity: 0 }}
-                              transition={{
-                                type: "spring",
-                                stiffness: 500,
-                                damping: 30,
-                              }}
-                              className="absolute inset-0 -z-10"
-                            >
-                              {/* Subtle radial gradient behind marked numbers */}
-                              <div className="absolute inset-0 bg-gradient-to-r from-pink-50 to-pink-100 rounded-lg -z-10" />
-
-                              {/* Decorative elements */}
-                              <motion.div
-                                initial={{ scale: 0, opacity: 0.6 }}
-                                animate={{ scale: 1.5, opacity: 0 }}
-                                transition={{
-                                  duration: 1.5,
-                                  repeat: Infinity,
-                                  repeatDelay: 1,
-                                }}
-                                className="absolute inset-0 border-2 border-pink-300 rounded-full -z-10"
-                                style={{
-                                  left: "50%",
-                                  top: "50%",
-                                  x: "-50%",
-                                  y: "-50%",
-                                }}
-                              />
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-
-                        <AnimatePresence>
-                          {isCalled &&
-                            !isMarked &&
-                            roomSettings?.autoMarkEnabled === false && (
-                              <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="absolute top-1 right-1"
-                              >
-                                <motion.div
-                                  className="w-2 h-2 rounded-full bg-amber-500"
-                                  animate={{
-                                    scale: [1, 1.5, 1],
-                                  }}
-                                  transition={{
-                                    duration: 1.5,
-                                    repeat: Infinity,
-                                    repeatType: "reverse",
-                                  }}
-                                />
-                              </motion.div>
-                            )}
-                        </AnimatePresence>
-                      </>
-                    )}
-                  </motion.div>
+                    autoMarkEnabled={!!roomSettings?.autoMarkEnabled}
+                  />
                 );
               })}
             </React.Fragment>
@@ -396,59 +573,50 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
         </div>
       </div>
 
-      <div className="p-4 bg-gray-50 flex flex-col md:flex-row justify-between items-center gap-3">
-        <div className="text-sm text-gray-600 bg-white px-3 py-1 rounded-full shadow-sm">
-          <span className="font-medium text-pink-500">
-            {ticket.markedNumbers.length}
-          </span>{" "}
-          marked
-        </div>
-
-        <div className="flex flex-wrap justify-center gap-2">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center px-3 py-1.5 bg-pink-500 text-white text-xs rounded-md hover:bg-pink-600 transition-colors shadow-md"
+      {/* Pattern Claim Section */}
+      <div className="p-4 bg-gray-50">
+        <h4 className="text-sm font-medium text-gray-700 mb-2">Claim Prize:</h4>
+        <div className="flex flex-wrap justify-center gap-2 overflow-x-auto pb-1">
+          <ClaimButton
+            pattern="Early 5"
+            icon="star"
+            color="pink"
             onClick={() => handleClaimPattern("Early 5")}
-          >
-            <i className="fas fa-star mr-1"></i> Early 5
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center px-3 py-1.5 bg-blue-500 text-white text-xs rounded-md hover:bg-blue-600 transition-colors shadow-md"
+            disabled={claimedPatterns.includes("Early 5")}
+          />
+          <ClaimButton
+            pattern="Full House"
+            icon="home"
+            color="blue"
             onClick={() => handleClaimPattern("Full House")}
-          >
-            <i className="fas fa-home mr-1"></i> Full House
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center px-3 py-1.5 bg-green-500 text-white text-xs rounded-md hover:bg-green-600 transition-colors shadow-md"
+            disabled={claimedPatterns.includes("Full House")}
+          />
+          <ClaimButton
+            pattern="Top Line"
+            icon="arrow-up"
+            color="green"
             onClick={() => handleClaimPattern("Top Line")}
-          >
-            <i className="fas fa-arrow-up mr-1"></i> Top Line
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center px-3 py-1.5 bg-yellow-500 text-white text-xs rounded-md hover:bg-yellow-600 transition-colors shadow-md"
+            disabled={claimedPatterns.includes("Top Line")}
+          />
+          <ClaimButton
+            pattern="Middle Line"
+            icon="arrow-down"
+            color="yellow"
             onClick={() => handleClaimPattern("Middle Line")}
-          >
-            <i className="fas fa-arrow-down mr-1"></i> Middle Line
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center px-3 py-1.5 bg-purple-500 text-white text-xs rounded-md hover:bg-purple-600 transition-colors shadow-md"
+            disabled={claimedPatterns.includes("Middle Line")}
+          />
+          <ClaimButton
+            pattern="Bottom Line"
+            icon="flag"
+            color="purple"
             onClick={() => handleClaimPattern("Bottom Line")}
-          >
-            <i className="fas fa-flag mr-1"></i> Bottom Line
-          </motion.button>
+            disabled={claimedPatterns.includes("Bottom Line")}
+          />
         </div>
       </div>
 
-      <div className="mt-6">
+      {/* Leaderboard Section */}
+      <div className="mt-4 border-t border-gray-100">
         <Leaderboard leaderboard={leaderboard} players={players} />
       </div>
     </div>
