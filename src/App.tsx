@@ -10,6 +10,7 @@ import JoinRoom from "./pages/JoinRoom";
 import Game from "./pages/Game";
 import NotFound from "./pages/NotFound";
 import JoinRoomRedirect from "./pages/JoinRoomRedirect";
+import HowToPlay from "@/pages/HowToPlay";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/join/:roomCode" element={<JoinRoom />} />
             <Route path="/join-room" element={<JoinRoomRedirect />} />
             <Route path="/game" element={<Game />} />
+            <Route path="/how-to-play" element={<HowToPlay />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

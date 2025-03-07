@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useGameContext } from "@/context/GameContext";
 import { toast } from "sonner";
 import {
@@ -208,6 +208,22 @@ const CreateRoomForm: React.FC = () => {
               Back to Home
             </motion.button>
           </div>
+
+          {/* Help Link */}
+          <motion.div
+            className="mt-4 text-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            <Link
+              to="/how-to-play"
+              className="text-purple-600 hover:text-purple-800 text-sm flex items-center justify-center"
+            >
+              <HelpCircle className="w-4 h-4 mr-1" />
+              New to Tambola? Learn how to play
+            </Link>
+          </motion.div>
         </form>
 
         {joinLink && (
@@ -227,17 +243,6 @@ const CreateRoomForm: React.FC = () => {
             </p>
           </motion.div>
         )}
-
-        <div className="p-3 text-center border-t">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            type="button"
-            className="text-sm text-purple-600 flex items-center justify-center mx-auto"
-          >
-            <HelpCircle size={14} className="mr-1" />
-            New to Tambola? Learn how to play
-          </motion.button>
-        </div>
       </motion.div>
     </div>
   );

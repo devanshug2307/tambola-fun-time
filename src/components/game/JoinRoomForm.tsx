@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { ButtonCustom } from "@/components/ui/button-custom";
 import { useGameContext } from "@/context/GameContext";
 import { toast } from "sonner";
@@ -356,8 +356,8 @@ const JoinRoomForm: React.FC = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 1 }}
         >
-          <a
-            href="#"
+          <Link
+            to="/how-to-play"
             className="text-purple-600 hover:text-purple-800 text-sm flex items-center justify-center"
           >
             <svg
@@ -373,7 +373,7 @@ const JoinRoomForm: React.FC = () => {
               />
             </svg>
             New to Tambola? Learn how to play
-          </a>
+          </Link>
         </motion.div>
       </form>
     </motion.div>

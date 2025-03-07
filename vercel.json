@@ -3,6 +3,7 @@
     { "source": "/join/:path*", "destination": "/index.html" },
     { "source": "/create-room", "destination": "/index.html" },
     { "source": "/join-room", "destination": "/index.html" },
-        { "source": "/game", "destination": "/index.html" }
+    { "source": "/game", "destination": "/index.html" },
+    { "source": "/how-to-play", "destination": "/index.html" }
   ]
 }
