@@ -31,7 +31,7 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ roomCode }) => {
 
   // Predefined speed options
   const speedOptions = [
-    { value: 1, label: "1 sec" },
+    { value: 3, label: "3 secs" },
     { value: 5, label: "5 secs" },
     { value: 7, label: "7 secs" },
     { value: 10, label: "10 secs" },
