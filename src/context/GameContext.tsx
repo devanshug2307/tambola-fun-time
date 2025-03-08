@@ -830,8 +830,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
       // Update local state
       setLastCalledNumber(newNumber);
       setCalledNumbers((prev) => Array.from(new Set([...prev, newNumber])));
-
-      toast.success(`Number called: ${newNumber}`);
     } catch (error) {
       console.error("Error calling number:", error);
       toast.error("Failed to call number. Please try again.");

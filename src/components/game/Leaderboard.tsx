@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Trophy,
   Medal,
@@ -17,15 +17,24 @@ import "./Leaderboard.css";
 interface LeaderboardProps {
   leaderboard: { playerName: string; pattern: string }[];
   players: { name: string }[];
+  externalIsOpen?: boolean;
+  onToggle?: () => void;
+  hideFloatingButton?: boolean;
 }
 
 const Leaderboard: React.FC<LeaderboardProps> = ({
   leaderboard = [],
   players,
+  externalIsOpen,
+  onToggle,
+  hideFloatingButton = false,
 }) => {
   const [activeTab, setActiveTab] = useState<"winners" | "players">("winners");
   const [showConfetti, setShowConfetti] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+
+  // Use external control if provided, otherwise use internal state
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
 
   // Get unique winners
   const uniqueWinners = Array.from(
@@ -61,8 +70,13 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
     setTimeout(() => setShowConfetti(false), 3000);
   };
 
+  // Toggle function that respects external control
   const toggleLeaderboard = () => {
-    setIsOpen(!isOpen);
+    if (onToggle) {
+      onToggle();
+    } else {
+      setInternalIsOpen(!internalIsOpen);
+    }
   };
 
   // Generate confetti elements
@@ -110,27 +124,29 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 
   return (
     <div className="relative">
-      {/* Mobile-friendly floating button to toggle leaderboard */}
-      <motion.button
-        className="fixed bottom-4 right-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full p-3 shadow-lg z-30 flex items-center justify-center"
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={toggleLeaderboard}
-        initial={{ opacity: 0, scale: 0 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      >
-        {isOpen ? (
-          <X size={24} />
-        ) : (
-          <div className="flex items-center">
-            <Trophy size={20} className="mr-2" />
-            <span className="mr-1 font-medium">
-              {leaderboard.length > 0 ? leaderboard.length : ""}
-            </span>
-          </div>
-        )}
-      </motion.button>
+      {/* Mobile-friendly floating button to toggle leaderboard - only show if not hidden */}
+      {!hideFloatingButton && (
+        <motion.button
+          className="fixed bottom-4 right-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full p-3 shadow-lg z-30 flex items-center justify-center"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={toggleLeaderboard}
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        >
+          {isOpen ? (
+            <X size={24} />
+          ) : (
+            <div className="flex items-center">
+              <Trophy size={20} className="mr-2" />
+              <span className="mr-1 font-medium">
+                {leaderboard.length > 0 ? leaderboard.length : ""}
+              </span>
+            </div>
+          )}
+        </motion.button>
+      )}
 
       {/* Leaderboard panel */}
       <AnimatePresence>
@@ -386,7 +402,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
 
       {/* Minimized leaderboard pill - show recent winners when closed */}
       <AnimatePresence>
-        {!isOpen && leaderboard.length > 0 && (
+        {!isOpen && leaderboard.length > 0 && !hideFloatingButton && (
           <motion.div
             className="fixed bottom-16 right-4 bg-white shadow-lg rounded-full px-3 py-1.5 z-20 flex items-center max-w-[200px]"
             initial={{ opacity: 0, x: 40 }}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { useGameContext } from "@/context/GameContext";
+import { useGameContext, GameState } from "@/context/GameContext";
 import Ticket from "@/components/game/Ticket";
 import NumberBoard from "@/components/game/NumberBoard";
 import {
@@ -41,6 +41,7 @@ const Game = () => {
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [activeTab, setActiveTab] = useState("board");
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   let isSoundPlaying = false;
 
   const playTickingSound = () => {
@@ -152,7 +153,8 @@ const Game = () => {
 
       setCallTimer(timer);
 
-      if (gameState === "waiting") {
+      // Display appropriate toast message
+      if (gameState.toString() === "waiting") {
         toast.success("Game started! Numbers will be called automatically.");
       } else {
         toast.success(
@@ -232,6 +234,10 @@ const Game = () => {
     return "Setting Up";
   };
 
+  const toggleLeaderboard = () => {
+    setShowLeaderboard(!showLeaderboard);
+  };
+
   // Loading states
   if (gameState === "creating" || gameState === "joining") {
     return (
@@ -295,6 +301,18 @@ const Game = () => {
               {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
             </button>
 
+            {/* Leaderboard Button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="text-sm text-gray-600 bg-pink-50 px-3 py-1.5 rounded-full shadow-sm hover:bg-pink-100 transition-colors flex items-center"
+              onClick={toggleLeaderboard}
+              aria-label="Toggle leaderboard"
+            >
+              <Trophy size={16} className="mr-1 text-pink-500" />
+              <span>{leaderboard.length > 0 ? leaderboard.length : 0}</span>
+            </motion.button>
+
             {gameState === "waiting" ? (
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -341,6 +359,15 @@ const Game = () => {
           </div>
         </div>
       </header>
+
+      {/* Leaderboard component with external control */}
+      <Leaderboard
+        leaderboard={leaderboard}
+        players={players}
+        externalIsOpen={showLeaderboard}
+        onToggle={toggleLeaderboard}
+        hideFloatingButton={true}
+      />
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Game status indicator */}
@@ -496,10 +523,6 @@ const Game = () => {
               {tickets.map((ticket) => (
                 <Ticket key={ticket.id} ticketId={ticket.id} />
               ))}
-              {/* Leaderboard Section */}
-              <div className="mt-4 border-t border-gray-100">
-                <Leaderboard leaderboard={leaderboard} players={players} />
-              </div>
             </motion.div>
           </div>
         </div>

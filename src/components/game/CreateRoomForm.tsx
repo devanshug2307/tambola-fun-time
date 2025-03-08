@@ -26,7 +26,7 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ roomCode }) => {
   const [roomCreated, setRoomCreated] = useState(false);
 
   const [formData, setFormData] = useState({
-    numberCallSpeed: 10,
+    numberCallSpeed: 1,
   });
 
   // Predefined speed options
@@ -65,7 +65,6 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ roomCode }) => {
       setCreatedRoomCode(createdCode);
       setJoinLink(`${window.location.origin}/join/${createdCode}`);
       setRoomCreated(true);
-      toast.success(`Room created! Room code: ${createdCode}`);
     } catch (error) {
       console.error("Error creating room:", error);
       toast.error("Failed to create room. Please try again.");

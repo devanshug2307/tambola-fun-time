@@ -37,8 +37,8 @@ const ClaimButton: React.FC<ClaimButtonProps> = ({
     <motion.button
       whileHover={{ scale: disabled ? 1 : 1.05 }}
       whileTap={{ scale: disabled ? 1 : 0.95 }}
-      className={`flex items-center px-3 py-1.5 text-white text-xs rounded-md shadow-md 
-        ${disabled ? "bg-gray-400 cursor-not-allowed" : colorMap[color]} 
+      className={`flex items-center px-3 py-1.5 text-white text-xs rounded-md shadow-md
+        ${disabled ? "bg-gray-400 cursor-not-allowed" : colorMap[color]}
         transition-colors duration-200`}
       onClick={onClick}
       disabled={disabled}
@@ -50,7 +50,6 @@ const ClaimButton: React.FC<ClaimButtonProps> = ({
   );
 };
 
-// Memoized number cell component for better performance
 const NumberCell: React.FC<{
   num: number | null;
   rowIndex: number;
@@ -77,15 +76,15 @@ const NumberCell: React.FC<{
         className={`relative flex items-center justify-center h-12 rounded-lg overflow-hidden
           ${
             num === null
-              ? "bg-gray-50"
+              ? "bg-gray-50 border border-gray-200" // Changed to regular border like other cells
               : isMarked
               ? "bg-white shadow-lg border-2 border-pink-500"
               : "bg-white border border-gray-200 cursor-pointer hover:bg-gray-50"
           }
           transition-all duration-300 ease-in-out`}
-        onClick={onClick}
+        onClick={() => num !== null && onClick()} // Fixed to use the passed onClick function
         whileHover={num !== null && !isMarked ? { scale: 1.05 } : {}}
-        whileTap={{ scale: 0.95 }}
+        whileTap={{ scale: num !== null ? 0.95 : 1 }}
         animate={
           isAnimating
             ? {
@@ -103,7 +102,7 @@ const NumberCell: React.FC<{
             : {}
         }
       >
-        {num !== null && (
+        {num !== null ? (
           <>
             {isMarked ? (
               <motion.div
@@ -188,6 +187,9 @@ const NumberCell: React.FC<{
               )}
             </AnimatePresence>
           </>
+        ) : (
+          // Empty cell - removed the circular element
+          <div className="w-full h-full"></div>
         )}
       </motion.div>
     );
@@ -217,6 +219,7 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
   const [claimedPattern, setClaimedPattern] = useState<string | null>(null);
   const [nextNumberTimer, setNextNumberTimer] = useState<number | null>(null);
+  const [showClaimHelp, setShowClaimHelp] = useState<boolean>(true);
 
   const ticket = tickets.find((t) => t.id === ticketId);
 
@@ -243,8 +246,16 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
     }
   }, [roomSettings]);
 
+  // Hide claim help message after 15 seconds
+  useEffect(() => {
+    if (showClaimHelp) {
+      const timer = setTimeout(() => setShowClaimHelp(false), 15000);
+      return () => clearTimeout(timer);
+    }
+  }, [showClaimHelp]);
+
   const handleNumberClick = useCallback(
-    (num: number | null) => {
+    (num: number) => {
       if (num === null || !calledNumbers.includes(num)) return;
 
       // Only mark if the number has been called and not already marked
@@ -263,7 +274,7 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
       const isPatternClaimed = winners.some((w) => w.pattern === pattern);
 
       if (isPatternClaimed) {
-        setMessage(`This prize has already been claimed by another user.`);
+        setMessage(`This prize has already been claimed by another player.`);
         setMessageType("error");
         return;
       }
@@ -414,20 +425,20 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
     <div className="tambola-ticket max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden relative">
       {/* Latest number call notification and timer */}
       {latestCalledNumber && (
-        <div className="bg-gradient-to-r from-violet-500 to-pink-500 text-white p-1 text-center shadow-md">
+        <div className="bg-gradient-to-r from-violet-500 to-pink-500 text-white p-2 text-center shadow-md">
           <div className="flex justify-center items-center gap-2">
             <motion.div
-              className="bg-white text-pink-600 font-bold rounded-full w-10 h-10 flex items-center justify-center"
+              className="bg-white text-pink-600 font-bold rounded-full w-12 h-12 flex items-center justify-center shadow-md"
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: "spring", damping: 12 }}
             >
               {latestCalledNumber}
             </motion.div>
-            <span className="text-sm">Called!</span>
+            <span className="text-sm md:text-base font-medium">Called!</span>
 
             {nextNumberTimer !== null && (
-              <div className="ml-2 text-xs">
+              <div className="ml-2 text-xs md:text-sm bg-white/20 rounded-full px-3 py-1">
                 Next number in:{" "}
                 <span className="font-bold">{nextNumberTimer}s</span>
               </div>
@@ -443,7 +454,7 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className={`text-white p-2 rounded-md m-4 text-center shadow-lg ${
+            className={`text-white p-3 rounded-md mx-4 my-2 text-center shadow-lg ${
               messageType === "error"
                 ? "bg-red-500"
                 : messageType === "success"
@@ -526,9 +537,9 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
       </AnimatePresence>
 
       {/* Ticket Header */}
-      <div className="p-3 border-b border-gray-100 flex justify-between items-center">
+      <div className="p-3 border-b border-gray-100 flex justify-between items-center bg-gray-50">
         <h3 className="text-lg font-semibold text-gray-900">Your Ticket</h3>
-        <div className="text-sm text-gray-600 bg-pink-50 px-3 py-1 rounded-full shadow-sm">
+        <div className="text-sm text-gray-600 bg-pink-50 px-3 py-1 rounded-full shadow-sm border border-pink-100">
           <span className="font-medium text-pink-500">
             {ticket.markedNumbers.length}
           </span>{" "}
@@ -537,7 +548,7 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
       </div>
 
       {/* Quick Tip Text */}
-      <div className="px-4 py-1 bg-gray-50 text-xs text-gray-500 text-center">
+      <div className="px-4 py-2 bg-blue-50 text-sm text-blue-600 text-center font-medium border-b border-blue-100">
         {roomSettings?.autoMarkEnabled
           ? "Numbers are marked automatically for you"
           : "Tap called numbers to mark them"}
@@ -545,7 +556,7 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
 
       {/* Ticket Grid */}
       <div className="tambola-ticket-inner p-4">
-        <div className="grid grid-cols-9 gap-1 shadow-sm p-2 bg-gray-50 rounded-lg">
+        <div className="grid grid-cols-9 gap-1 shadow-sm p-3 bg-gray-50 rounded-lg border border-gray-100">
           {ticket.numbers.map((row, rowIndex) => (
             <React.Fragment key={`row-${rowIndex}`}>
               {row.map((num, colIndex) => {
@@ -573,10 +584,29 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
         </div>
       </div>
 
-      {/* Pattern Claim Section */}
-      <div className="p-4 bg-gray-50">
-        <h4 className="text-sm font-medium text-gray-700 mb-2">Claim Prize:</h4>
-        <div className="flex flex-wrap justify-center gap-2 overflow-x-auto pb-1">
+      {/* Pattern Claim Section with improved UI */}
+      <div className="p-4 bg-gradient-to-r from-indigo-50 to-pink-50">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-base font-medium text-gray-700">Claim Prize:</h4>
+
+          {/* Instructions tooltip */}
+          <AnimatePresence>
+            {showClaimHelp && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full flex items-center"
+              >
+                <i className="fas fa-info-circle mr-1"></i>
+                Click button when you complete a pattern!
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Improved prize claim section with visual hierarchy */}
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
           <ClaimButton
             pattern="Early 5"
             icon="star"
@@ -607,11 +637,17 @@ const Ticket: React.FC<TicketProps> = ({ ticketId }) => {
           />
           <ClaimButton
             pattern="Bottom Line"
-            icon="flag"
+            icon="trophy"
             color="purple"
             onClick={() => handleClaimPattern("Bottom Line")}
             disabled={claimedPatterns.includes("Bottom Line")}
           />
+        </div>
+
+        {/* Added hint about patterns */}
+        <div className="mt-3 text-xs text-center text-gray-500 italic">
+          Complete a pattern on your ticket, then click the corresponding button
+          to claim your prize!
         </div>
       </div>
 
