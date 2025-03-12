@@ -11,6 +11,7 @@ import Game from "./pages/Game";
 import NotFound from "./pages/NotFound";
 import JoinRoomRedirect from "./pages/JoinRoomRedirect";
 import HowToPlay from "@/pages/HowToPlay";
+import { Analytics } from "@vercel/analytics/react";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        <Analytics />
       </GameProvider>
     </TooltipProvider>
   </QueryClientProvider>
