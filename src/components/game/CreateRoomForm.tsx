@@ -19,14 +19,14 @@ interface CreateRoomFormProps {
 
 const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ roomCode }) => {
   const navigate = useNavigate();
-  const { createRoom } = useGameContext();
+  const { createRoom, updateNumberCallSpeed } = useGameContext();
   const [isCreating, setIsCreating] = useState(false);
   const [joinLink, setJoinLink] = useState<string | null>(null);
   const [createdRoomCode, setCreatedRoomCode] = useState<string>("");
   const [roomCreated, setRoomCreated] = useState(false);
 
   const [formData, setFormData] = useState({
-    numberCallSpeed: 1,
+    numberCallSpeed: 7,
   });
 
   // Predefined speed options
@@ -50,6 +50,7 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ roomCode }) => {
       ...prev,
       numberCallSpeed: speed,
     }));
+    updateNumberCallSpeed(speed);
   };
 
   const handleCreateRoom = async () => {
@@ -59,7 +60,6 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ roomCode }) => {
     try {
       const createdCode = await createRoom({
         roomCode: roomCode,
-        numberCallSpeed: formData.numberCallSpeed,
       });
 
       setCreatedRoomCode(createdCode);

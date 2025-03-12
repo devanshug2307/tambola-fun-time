@@ -58,6 +58,7 @@ interface GameContextType {
   setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
   roomUrl: string | null;
   generateClientRoomCode: () => string;
+  updateNumberCallSpeed: (speed: number) => void;
 }
 
 const defaultContext: GameContextType = {
@@ -83,6 +84,7 @@ const defaultContext: GameContextType = {
   setPlayers: () => {},
   roomUrl: null,
   generateClientRoomCode: () => "",
+  updateNumberCallSpeed: () => {},
 };
 
 const GameContext = createContext<GameContextType>(defaultContext);
@@ -473,7 +475,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
           code: settings.roomCode || (await getUniqueRoomCode()),
           host_name: "Host",
           host_id: hostId,
-          number_call_speed: settings.numberCallSpeed || 10,
+          number_call_speed: settings.numberCallSpeed || 7,
           auto_mark_enabled: settings.autoMarkEnabled ?? false,
           winning_patterns: winningPatterns as unknown as Json,
           status: "waiting",
@@ -521,7 +523,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         id: playerData.id,
         name: playerData.name,
         isReady: playerData.is_ready,
-        isHost: false,
+        isHost: true,
       });
 
       const ticketNumbers = generateTicket();
@@ -553,7 +555,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
           id: playerData.id,
           name: playerData.name,
           isReady: playerData.is_ready,
-          isHost: false,
+          isHost: true,
         },
       ]);
 
@@ -982,6 +984,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
     toast.info("You left the game room.");
   };
 
+  const updateNumberCallSpeed = (speed: number) => {
+    if (roomSettings) {
+      setRoomSettings((prev) => ({
+        ...prev,
+        numberCallSpeed: speed,
+      }));
+    }
+  };
+
   return (
     <GameContext.Provider
       value={{
@@ -1007,6 +1018,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         setPlayers,
         roomUrl,
         generateClientRoomCode,
+        updateNumberCallSpeed,
       }}
     >
       {children}

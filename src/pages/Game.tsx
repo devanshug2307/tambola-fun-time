@@ -200,9 +200,12 @@ const Game = () => {
     };
   }, []);
 
-  const isHost = players.some(
-    (player) => player.isHost && player.name === currentPlayer.name
-  );
+  useEffect(() => {
+    console.log("Current Player:", currentPlayer);
+    console.log("Players List:", players);
+  }, [currentPlayer, players]);
+
+  const isHost = currentPlayer?.isHost;
 
   // Get count of player's marked numbers across all tickets
   const getTotalMarkedCount = () => {
@@ -313,48 +316,54 @@ const Game = () => {
               <span>{leaderboard.length > 0 ? leaderboard.length : 0}</span>
             </motion.button>
 
-            {gameState === "waiting" ? (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-full font-medium shadow-md hover:shadow-lg transition-all flex items-center"
-                onClick={handleStartGame}
-              >
-                <Play size={16} className="mr-1" />
-                Start Game
-              </motion.button>
-            ) : gameState === "playing" || gameState === "paused" ? (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={
-                  isPlaying
-                    ? "bg-amber-500 text-white px-4 py-2 rounded-full font-medium shadow-md hover:shadow-lg transition-all flex items-center"
-                    : "bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-full font-medium shadow-md hover:shadow-lg transition-all flex items-center"
-                }
-                onClick={handleTogglePause}
-              >
-                {isPlaying ? (
-                  <>
-                    <Pause size={16} className="mr-1" />
-                    Pause
-                  </>
-                ) : (
-                  <>
-                    <Play size={16} className="mr-1" />
-                    Resume
-                  </>
-                )}
-              </motion.button>
+            {isHost ? (
+              gameState === "waiting" ? (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-full font-medium shadow-md hover:shadow-lg transition-all flex items-center"
+                  onClick={handleStartGame}
+                >
+                  <Play size={16} className="mr-1" />
+                  Start Game
+                </motion.button>
+              ) : gameState === "playing" || gameState === "paused" ? (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={
+                    isPlaying
+                      ? "bg-amber-500 text-white px-4 py-2 rounded-full font-medium shadow-md hover:shadow-lg transition-all flex items-center"
+                      : "bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-full font-medium shadow-md hover:shadow-lg transition-all flex items-center"
+                  }
+                  onClick={handleTogglePause}
+                >
+                  {isPlaying ? (
+                    <>
+                      <Pause size={16} className="mr-1" />
+                      Pause
+                    </>
+                  ) : (
+                    <>
+                      <Play size={16} className="mr-1" />
+                      Resume
+                    </>
+                  )}
+                </motion.button>
+              ) : (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-gray-500 text-white px-4 py-2 rounded-full font-medium shadow-md hover:shadow-lg transition-all flex items-center"
+                  onClick={handleLeaveGame}
+                >
+                  Exit Game
+                </motion.button>
+              )
             ) : (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-gray-500 text-white px-4 py-2 rounded-full font-medium shadow-md hover:shadow-lg transition-all flex items-center"
-                onClick={handleLeaveGame}
-              >
-                Exit Game
-              </motion.button>
+              <div className="text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded-full shadow-sm">
+                Waiting for host to start the game...
+              </div>
             )}
           </div>
         </div>
