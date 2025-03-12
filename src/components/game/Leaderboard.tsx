@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import "./Leaderboard.css";
+import { useGameContext } from "@/context/GameContext";
 
 interface LeaderboardProps {
   leaderboard: { playerName: string; pattern: string }[];
@@ -20,6 +21,7 @@ interface LeaderboardProps {
   externalIsOpen?: boolean;
   onToggle?: () => void;
   hideFloatingButton?: boolean;
+  defaultActiveTab?: "winners" | "players";
 }
 
 const Leaderboard: React.FC<LeaderboardProps> = ({
@@ -28,17 +30,22 @@ const Leaderboard: React.FC<LeaderboardProps> = ({
   externalIsOpen,
   onToggle,
   hideFloatingButton = false,
+  defaultActiveTab = "winners",
 }) => {
-  const [activeTab, setActiveTab] = useState<"winners" | "players">("winners");
+  const { leaderboard: globalLeaderboard } = useGameContext();
+
+  const [activeTab, setActiveTab] = useState<"winners" | "players">(
+    defaultActiveTab
+  );
   const [showConfetti, setShowConfetti] = useState(false);
   const [internalIsOpen, setInternalIsOpen] = useState(false);
 
   // Use external control if provided, otherwise use internal state
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
 
-  // Get unique winners
+  // Get unique winners from global state
   const uniqueWinners = Array.from(
-    new Set(leaderboard.map((entry) => entry.playerName))
+    new Set(globalLeaderboard.map((entry) => entry.playerName))
   );
 
   // Patterns and their associated icons/colors

@@ -42,6 +42,9 @@ const Game = () => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [activeTab, setActiveTab] = useState("board");
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [defaultTab, setDefaultTab] = useState<"winners" | "players">(
+    "winners"
+  );
   let isSoundPlaying = false;
 
   const playTickingSound = () => {
@@ -237,7 +240,8 @@ const Game = () => {
     return "Setting Up";
   };
 
-  const toggleLeaderboard = () => {
+  const toggleLeaderboard = (tab: "winners" | "players" = "winners") => {
+    setDefaultTab(tab);
     setShowLeaderboard(!showLeaderboard);
   };
 
@@ -293,7 +297,9 @@ const Game = () => {
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="flex items-center text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded-full">
               <Users size={16} className="mr-1" />
-              <span>{players.length} players</span>
+              <span onClick={() => toggleLeaderboard("players")}>
+                {players.length} players
+              </span>
             </div>
 
             <button
@@ -309,7 +315,7 @@ const Game = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="text-sm text-gray-600 bg-pink-50 px-3 py-1.5 rounded-full shadow-sm hover:bg-pink-100 transition-colors flex items-center"
-              onClick={toggleLeaderboard}
+              onClick={() => toggleLeaderboard("winners")}
               aria-label="Toggle leaderboard"
             >
               <Trophy size={16} className="mr-1 text-pink-500" />
@@ -376,6 +382,7 @@ const Game = () => {
         externalIsOpen={showLeaderboard}
         onToggle={toggleLeaderboard}
         hideFloatingButton={true}
+        defaultActiveTab={defaultTab}
       />
 
       <main className="max-w-7xl mx-auto px-4 py-6">

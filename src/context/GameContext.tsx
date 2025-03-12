@@ -400,13 +400,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "winners",
           filter: `room_id=eq.${roomId}`,
         },
         async (payload) => {
-          console.log("New winner:", payload);
+          console.log("Winner event:", payload);
 
           const { data: winnerData, error } = await supabase
             .from("winners")
@@ -440,6 +440,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
               },
             }));
             setWinners(formattedWinners);
+
+            // Update the leaderboard
+            const newLeaderboard = winnerData.map((w) => ({
+              playerName: w.players.name,
+              pattern: w.pattern,
+            }));
+            setLeaderboard(newLeaderboard);
           }
         }
       )
@@ -924,11 +931,20 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
 
-      setWinners((prev) => [...prev, { pattern, player: currentPlayer }]);
+      // Update winners and leaderboard globally
+      const newWinner = { pattern, player: currentPlayer };
+      setWinners((prev) => [...prev, newWinner]);
       setLeaderboard((prev) => [
         ...prev,
         { playerName: currentPlayer.name, pattern },
       ]);
+
+      // Broadcast the new winner to all clients
+      await supabase
+        .from("winners")
+        .update({ broadcast: true })
+        .eq("room_id", roomId);
+
       toast.success(`Congratulations! You claimed the ${pattern} pattern.`);
     } catch (error) {
       console.error("Error claiming pattern:", error);
