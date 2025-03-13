@@ -48,17 +48,14 @@ const Home: React.FC = () => {
       const audio = audioRef.current;
 
       const handlePlay = () => {
-        console.log("Audio played");
         setIsPlaying(true);
       };
 
       const handlePause = () => {
-        console.log("Audio paused");
         setIsPlaying(false);
       };
 
       const handleEnded = () => {
-        console.log("Audio ended");
         setIsPlaying(false);
       };
 
@@ -68,9 +65,7 @@ const Home: React.FC = () => {
 
       // Try to autoplay once
       audio.currentTime = 13;
-      audio.play().catch((error) => {
-        console.error("Autoplay failed:", error);
-      });
+      audio.play().catch((error) => {});
 
       setAudioInitialized(true);
     }
@@ -98,17 +93,11 @@ const Home: React.FC = () => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    console.log("Toggle sound called, current state:", isPlaying);
-
     if (isPlaying) {
-      console.log("Pausing audio");
       audio.pause();
     } else {
-      console.log("Playing audio");
       audio.currentTime = 13;
-      audio.play().catch((error) => {
-        console.error("Play failed:", error);
-      });
+      audio.play().catch((error) => {});
     }
   };
 

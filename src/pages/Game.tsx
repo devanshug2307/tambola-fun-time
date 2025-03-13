@@ -203,11 +203,6 @@ const Game = () => {
     };
   }, []);
 
-  useEffect(() => {
-    console.log("Current Player:", currentPlayer);
-    console.log("Players List:", players);
-  }, [currentPlayer, players]);
-
   const isHost = currentPlayer?.isHost;
 
   // Get count of player's marked numbers across all tickets

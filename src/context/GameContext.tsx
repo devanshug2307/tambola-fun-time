@@ -98,7 +98,7 @@ const numberPhrases: { [key: number]: string } = {
   4: "Four spoons of sugar? Who's counting?",
   5: "Five minutes late? Indian Standard Time, bro.",
   6: "Six packs? More like six parathas.",
-  7: "Seven alarms, and still, you wake up late.",
+  7: "Seven thala for a reason",
   8: "Eight hours of work, but somehow, the meeting lasted nine.",
   9: "Nine times out of ten, you forget why you walked into the room.",
   10: "Ten rupees Maggi still tastes better than a fancy dinner.",
@@ -286,7 +286,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
           filter: `id=eq.${roomId}`,
         },
         (payload) => {
-          console.log("Room updated:", payload);
           if (payload.new && payload.eventType === "UPDATE") {
             const roomData = payload.new as any;
             setRoomSettings({
@@ -317,15 +316,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
           filter: `room_id=eq.${roomId}`,
         },
         async (payload) => {
-          console.log("Player event:", payload);
-
           const { data: playerData, error } = await supabase
             .from("players")
             .select("*")
             .eq("room_id", roomId);
 
           if (error) {
-            console.error("Error fetching players:", error);
             return;
           }
 
@@ -353,8 +349,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
           filter: `room_id=eq.${roomId}`,
         },
         async (payload) => {
-          console.log("New number called:", payload);
-
           const { data: numbersData, error } = await supabase
             .from("called_numbers")
             .select("number")
@@ -362,7 +356,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
             .order("called_at", { ascending: true });
 
           if (error) {
-            console.error("Error fetching called numbers:", error);
             return;
           }
 
@@ -406,8 +399,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
           filter: `room_id=eq.${roomId}`,
         },
         async (payload) => {
-          console.log("Winner event:", payload);
-
           const { data: winnerData, error } = await supabase
             .from("winners")
             .select(
@@ -425,7 +416,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
             .eq("room_id", roomId);
 
           if (error) {
-            console.error("Error fetching winners:", error);
             return;
           }
 
@@ -491,7 +481,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         .single();
 
       if (roomError) {
-        console.error("Error creating room:", roomError);
         setGameState("idle");
         toast.error("Failed to create room. Please try again.");
         throw roomError;
@@ -519,7 +508,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         .single();
 
       if (playerError) {
-        console.error("Error adding host player:", playerError);
         setGameState("idle");
         toast.error("Failed to create room. Please try again.");
         throw playerError;
@@ -574,7 +562,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
 
       return roomData.code;
     } catch (error) {
-      console.error("Error creating room:", error);
       toast.error("Failed to create room. Please try again.");
       setGameState("idle");
       throw error;
@@ -585,7 +572,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
     const { data, error } = await supabase.rpc("generate_room_code");
 
     if (error) {
-      console.error("Error generating room code:", error);
       return generateClientRoomCode();
     }
 
@@ -617,7 +603,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         .single();
 
       if (roomError) {
-        console.error("Error finding room:", roomError);
         setGameState("idle");
         toast.error(
           "Room not found. Please check the room code and try again."
@@ -677,7 +662,6 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
         .single();
 
       if (playerError) {
-        console.error("Error adding player:", playerError);
         setGameState("idle");
         toast.error("Failed to join room. Please try again.");
         throw playerError;
