@@ -240,7 +240,7 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ roomCode }) => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.98 }}
                   type="button"
-                  className={`py-1 md:py-2 px-2 md:px-4 rounded-full flex-1 transition-colors text-xs md:text-sm ${
+                  className={`py-2.5 md:py-3.5 px-2 md:px-4 rounded-full flex-1 transition-colors text-xs md:text-sm ${
                     formData.numberCallSpeed === option.value
                       ? "bg-yellow-500 text-white font-medium shadow-md"
                       : "bg-gray-100 text-gray-800 hover:bg-gray-200"
